@@ -29,6 +29,7 @@ import { useLayoutState } from './hooks/use-layout-state';
 import { layoutStore } from './hooks/use-layout-store';
 import { usePhotoMode, usePhotoModeActive } from './hooks/use-photo-mode';
 import { usePlacementGhost } from './hooks/use-placement-ghost';
+import { useProduction } from './hooks/use-production';
 import { useRecentColors } from './hooks/use-recent-colors';
 import { useSceneEffects, measurementDistance, type UseSceneEffectsParams } from './hooks/use-scene-effects';
 import { useSceneLife } from './hooks/use-scene-life';
@@ -88,6 +89,7 @@ import { ItemContextPopover } from './panels/item-context-popover';
 import { LotBadge } from './panels/lot-badge';
 import { PlacementHint } from './panels/placement-hint';
 import { PlanCalibrationChip } from './panels/plan-calibration-chip';
+import { ProductionPanel, ProductionToggle } from './panels/production-panel';
 import { SidebarDrawer } from './panels/sidebar-drawer';
 import { StatusToastHost } from './panels/status-toast';
 import { TouchModeToggle } from './panels/touch-mode-toggle';
@@ -891,6 +893,14 @@ export function RoomOrganizer(): JSX.Element {
     if (next < 0 || next >= layout.floors.length) return;
     actions.setActiveFloorIndex(next);
   });
+  // Production tracking prototype (factory fork): status colours on the machines and the panel.
+  const [productionOpen, setProductionOpen] = useState(false);
+  const production = useProduction({ enabled: productionOpen, layout, sceneRef, threeModuleRef, invalidate });
+  const focusMachine = useEvent((floorIndex: number, id: string) => {
+    if (floorIndex !== activeFloorIndex) actions.setActiveFloorIndex(floorIndex);
+    // Selected once the floor has switched, so the item is on the active floor.
+    window.setTimeout(() => selectOnly(id), 0);
+  });
   // Keyboard edits say what they did in the status line (#929); a pointer
   // drag stays silent. Read when the keys settle, from the house as it is.
   const announcePlacement = useEvent((id: string) => {
@@ -1230,6 +1240,26 @@ export function RoomOrganizer(): JSX.Element {
       />
 
       <DevDiagnostics isReady={isReady} rendererRef={rendererRef} sceneRef={sceneRef} />
+
+      {!touring && !error && (
+        <ProductionToggle
+          open={productionOpen}
+          running={production.rows.filter((row) => row.snapshot.status === 'running').length}
+          total={production.rows.length}
+          onToggle={() => setProductionOpen((open) => !open)}
+        />
+      )}
+      {productionOpen && !touring && (
+        <ProductionPanel
+          rows={production.rows}
+          shiftHours={production.shiftHours}
+          speed={production.speed}
+          onSpeed={production.setSpeed}
+          onClose={() => setProductionOpen(false)}
+          onFocus={(row) => focusMachine(row.floorIndex, row.item.id)}
+          selectedId={selectedItemId}
+        />
+      )}
 
       {/* A tour shows the name, the floors and the camera, and nothing that edits (#722). */}
       {touring ? (

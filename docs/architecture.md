@@ -61,6 +61,8 @@ components/
     │   └── index.ts                    Barrel
     ├── lib/                             Pure domain code, no React/Three
     │   ├── types.ts                     RoomLayout / FloorLayout / ViewSettings / etc.
+    │   ├── production/                  Production tracking prototype (factory fork)
+    │   │   └── production.ts            Sample work orders per machine type and the simulated shift: status, progress, time left, scrap, OEE
     │   ├── i18n/                        Interface language, Turkish / English (factory fork)
     │   │   ├── i18n.ts                  getLang/setLang, translate(): English text is the key, exact or by template
     │   │   ├── dom-translator.ts        Applies translate() to rendered text and attributes; restores English on switch
@@ -193,6 +195,7 @@ components/
     │       ├── print-popup.ts           The print popup: opened inside the click, filled by code loaded after it (#589); prints once loaded (#445)
     │       └── print.ts                 Print-to-scale document: paper, orientation, scale, outdoor and all-floors options (#435, #405); popup → Save-as-PDF
     ├── three/                           Three.js builders, no React
+    │   ├── production-tint.ts           Production status colours on the machines and the pad under each (factory fork)
     │   ├── furniture-builders.ts        Registry + factory: furniture type → mesh builder
     │   ├── builder-utils.ts             Shared types + mesh()/material()/softBox() helpers (soft chamfered edges, #755), dispose helpers (disposeScene on unmount, #213)
     │   ├── three-runtime.ts             The named three.js symbols the app uses; the engine's only runtime import (#411)
@@ -274,7 +277,8 @@ components/
     │   ├── use-file-drop.ts             The page-wide drop target for house and backup files, and the installed app's launch queue (#934)
     │   ├── use-photo-mode.ts            Photo mode: html[data-photo], the key guard, and the 2x capture through renderer.render + toBlob, downloaded or kept in the album (#626, #912)
     │   ├── use-photo-album.ts           One house's album photos, newest first, kept current across saves and deletes (#912)
-    │   ├── use-walkthrough.ts           Walkthrough: PointerLock + WASD, touch look + stick, stairs, doors, sitting, floor changes
+    │   ├── use-walkthrough.ts           Walkthrough: PointerLock + WASD, touch look + stick, stairs, doors, sitting, floor changes; click on the floor to walk there (factory fork)
+    │   ├── use-production.ts            Production prototype: the simulated shift clock, rows for the panel, status colours (factory fork)
     │   ├── use-people-model.ts          Loads people.glb the first time a person or a walker needs it
     │   ├── use-npcs.ts                  Animated walkers per storey (keyed by floor id, parked while not drawn): spawn, route-following step, re-route on floor edits; giving way, sitting, activities
     │   ├── use-weather.ts               Rain / snow clock on the frame budget
@@ -366,6 +370,7 @@ components/
         ├── actions-panel.tsx
         ├── print-options.tsx            Print / PDF button and its folding options (paper, orientation, scale, outdoor, every floor)
         ├── shortcuts-panel.tsx          Shortcut sheet, drawn from the key table (lib/keymap) by context, platform-aware (#932)
+        ├── production-panel.tsx         Production tracking panel and its toggle: KPIs, machines by area, order progress, time left, scrap, OEE (factory fork)
         ├── welcome-banner.tsx           First-run start chooser: start empty, a template (with its plan), or a random one (#721)
         ├── first-steps-card.tsx         Getting started checklist: each step arms its tool, the next one shows its tips; a thin occluding line on phones (#721)
         ├── minimap.tsx
