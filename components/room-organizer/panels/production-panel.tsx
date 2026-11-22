@@ -6,6 +6,7 @@ import { useLang } from '../lib/i18n/language-picker';
 import {
   STATUS_COLORS,
   STATUS_LABELS,
+  productTotals,
   shiftClock,
   type MachineStatus,
   type Unit,
@@ -79,7 +80,6 @@ export function ProductionPanel({ rows, shiftHours, speed, onSpeed, onClose, onF
     listRef.current?.querySelector(`[data-machine="${CSS.escape(selectedId)}"]`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   }, [selectedId]);
 
-  const units = UNIT_LABELS[lang];
   const shiftEnd = shiftClock(8);
 
   return (
@@ -163,7 +163,6 @@ export function ProductionPanel({ rows, shiftHours, speed, onSpeed, onClose, onF
                 key={row.item.id}
                 row={row}
                 lang={lang}
-                unit={row.snapshot.order ? units[row.snapshot.order.product.unit] : ''}
                 selected={row.item.id === selectedId}
                 onFocus={() => onFocus(row)}
               />
@@ -179,18 +178,13 @@ export function ProductionPanel({ rows, shiftHours, speed, onSpeed, onClose, onF
   );
 }
 
-function MachineCard({ row, lang, unit, selected, onFocus }: { row: ProductionRow; lang: Lang; unit: string; selected: boolean; onFocus(): void }): JSX.Element {
-  const { snapshot, item } = row;
-  const color = STATUS_COLORS[snapshot.status];
-  const order = snapshot.order;
-  const good = snapshot.produced - snapshot.scrapped;
-  const scrapShare = snapshot.produced > 0 ? snapshot.scrapped / snapshot.produced : 0;
-  const next = snapshot.next[0];
+function MachineCard({ row, lang, selected, onFocus }: { row: ProductionRow; lang: Lang; selected: boolean; onFocus(): void }): JSX.Element {
+  const color = STATUS_COLORS[row.snapshot.status];
   const edge = selected ? 'var(--pc-cyan-glow)' : 'rgba(255,255,255,0.08)';
   return (
     <button
       type="button"
-      data-machine={item.id}
+      data-machine={row.item.id}
       onClick={onFocus}
       style={{
         display: 'block',
@@ -210,6 +204,26 @@ function MachineCard({ row, lang, unit, selected, onFocus }: { row: ProductionRo
         font: 'inherit',
       }}
     >
+      <MachineCardBody row={row} lang={lang} />
+    </button>
+  );
+}
+
+/**
+ * A machine's production at a glance: status, product and order, progress,
+ * time left, scrap, OEE and the next order. The panel's cards and the 3D
+ * hover popup both show it.
+ */
+export function MachineCardBody({ row, lang }: { row: ProductionRow; lang: Lang }): JSX.Element {
+  const { snapshot, item } = row;
+  const color = STATUS_COLORS[snapshot.status];
+  const order = snapshot.order;
+  const good = snapshot.produced - snapshot.scrapped;
+  const scrapShare = snapshot.produced > 0 ? snapshot.scrapped / snapshot.produced : 0;
+  const next = snapshot.next[0];
+  const unit = order ? UNIT_LABELS[lang][order.product.unit] : '';
+  return (
+    <>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
         <span style={{ flex: 1, fontWeight: 700, fontSize: 13 }}>{item.name}</span>
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 700, color }}>
@@ -245,7 +259,17 @@ function MachineCard({ row, lang, unit, selected, onFocus }: { row: ProductionRo
       ) : (
         <div style={{ fontSize: 12, color: 'var(--pc-paper-soft)', marginTop: 2 }}>No order waiting</div>
       )}
-    </button>
+    </>
+  );
+}
+
+/** The hover popup over a machine in the 3D view or the plan: the panel card, framed by its status colour. */
+export function MachineHoverCard({ row }: { row: ProductionRow }): JSX.Element {
+  const lang = useLang();
+  return (
+    <div style={{ width: 290, borderLeft: `4px solid ${STATUS_COLORS[row.snapshot.status]}`, paddingLeft: 10, color: 'var(--pc-paper)', fontFamily: 'var(--pc-font-body)' }}>
+      <MachineCardBody row={row} lang={lang} />
+    </div>
   );
 }
 
@@ -324,5 +348,83 @@ export function ProductionToggle({ open, running, total, onToggle }: { open: boo
         </span>
       )}
     </button>
+  );
+}
+
+/**
+ * The shift's products on the left (factory fork): what has been made, how
+ * much, how much went to scrap and how many machines are on it now.
+ */
+export function ProductSummaryPanel({ rows }: { rows: readonly ProductionRow[] }): JSX.Element {
+  const lang = useLang();
+  const totals = useMemo(() => productTotals(rows.map((row) => ({ type: row.item.type, snapshot: row.snapshot }))), [rows]);
+  const largest = useMemo(() => {
+    const byUnit = new Map<Unit, number>();
+    for (const t of totals) byUnit.set(t.product.unit, Math.max(byUnit.get(t.product.unit) ?? 0, t.good));
+    return byUnit;
+  }, [totals]);
+  const units = UNIT_LABELS[lang];
+  return (
+    <aside
+      className="pc-glass pc-glass--dark"
+      aria-label="Products made this shift"
+      style={{
+        position: 'absolute',
+        top: 80,
+        left: 16,
+        width: 'min(300px, calc(100vw - 32px))',
+        maxHeight: 'max(200px, calc(100vh - 500px))',
+        zIndex: 44,
+        display: 'flex',
+        flexDirection: 'column',
+        borderRadius: 16,
+        color: 'var(--pc-paper)',
+        fontFamily: 'var(--pc-font-body)',
+        overflow: 'hidden',
+      }}
+    >
+      <header style={{ padding: '12px 14px 8px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+        <div style={{ fontFamily: 'var(--pc-font-display)', fontWeight: 800, fontSize: 15 }}>
+          📦 <span>Products this shift</span>
+        </div>
+        <div style={{ fontSize: 11, color: 'var(--pc-paper-soft)', marginTop: 2 }}>
+          <span data-no-translate="">{totals.length}</span> <span>varieties</span> · <span>good output and scrap</span>
+        </div>
+      </header>
+      <div style={{ overflowY: 'auto', padding: '6px 12px 10px' }}>
+        {totals.length === 0 && <p style={{ fontSize: 12, color: 'var(--pc-paper-soft)' }}>Nothing made yet this shift.</p>}
+        {totals.map((t) => {
+          const max = largest.get(t.product.unit) ?? 1;
+          const scrapShare = t.good + t.scrap > 0 ? t.scrap / (t.good + t.scrap) : 0;
+          return (
+            <div key={t.product.name} style={{ padding: '7px 0', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                <span style={{ flex: 1, fontSize: 12, fontWeight: 700 }}>{t.product.name}</span>
+                <span data-no-translate="" style={{ fontSize: 12, fontWeight: 800, fontVariantNumeric: 'tabular-nums' }}>
+                  {count(t.good, lang)} {units[t.product.unit]}
+                </span>
+              </div>
+              <div style={{ height: 5, borderRadius: 3, background: 'rgba(255,255,255,0.08)', marginTop: 4, overflow: 'hidden' }}>
+                <div style={{ width: `${max > 0 ? (t.good / max) * 100 : 0}%`, height: '100%', background: STATUS_COLORS.running, transition: 'width 0.8s linear' }} />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--pc-paper-soft)', marginTop: 3 }}>
+                <span>
+                  <span>Scrap</span>{' '}
+                  <span data-no-translate="" style={{ color: scrapShare > 0.025 ? STATUS_COLORS.setup : undefined }}>
+                    {count(t.scrap, lang)} {units[t.product.unit]} ({percent(scrapShare, lang, 1)})
+                  </span>
+                </span>
+                {t.running > 0 && (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: STATUS_COLORS.running }}>
+                    <Dot color={STATUS_COLORS.running} pulse />
+                    <span data-no-translate="">{t.running}</span> <span>{t.running === 1 ? 'machine' : 'machines'}</span>
+                  </span>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </aside>
   );
 }

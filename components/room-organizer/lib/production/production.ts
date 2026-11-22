@@ -77,6 +77,8 @@ export interface MachineSnapshot {
   /** Totals since the shift began. */
   shiftGood: number;
   shiftScrap: number;
+  /** The shift's output by product name. */
+  shiftByProduct: Readonly<Record<string, { product: Product; good: number; scrap: number }>>;
 }
 
 // ---------------------------------------------------------------------------
@@ -178,6 +180,7 @@ export function machineSnapshot(plan: MachinePlan, shiftHours: number): MachineS
   let index = -1;
   let shiftGood = 0;
   let shiftScrap = 0;
+  const shiftByProduct: Record<string, { product: Product; good: number; scrap: number }> = {};
 
   for (let i = 0; i < plan.orders.length; i++) {
     const order = plan.orders[i]!;
@@ -192,6 +195,9 @@ export function machineSnapshot(plan: MachinePlan, shiftHours: number): MachineS
       const made = (shiftTo - shiftFrom) * rate;
       shiftGood += made * (1 - order.product.scrap);
       shiftScrap += made * order.product.scrap;
+      const entry = (shiftByProduct[order.product.name] ??= { product: order.product, good: 0, scrap: 0 });
+      entry.good += made * (1 - order.product.scrap);
+      entry.scrap += made * order.product.scrap;
     }
     if (index < 0 && worked < runEnd) {
       index = i;
@@ -230,7 +236,60 @@ export function machineSnapshot(plan: MachinePlan, shiftHours: number): MachineS
     oee: { availability, performance, quality, oee: availability * performance * quality },
     shiftGood,
     shiftScrap,
+    shiftByProduct,
   };
+}
+
+/**
+ * Where a product counts as made: the last step of the line that turns it
+ * out. Cocoa biscuits pass the moulder, the oven and the cooling tunnel; the
+ * product summary counts them once, as they leave the last of those.
+ */
+const STAGE: Readonly<Record<string, number>> = {
+  'dough-mixer': 1,
+  conche: 2,
+  'rotary-moulder': 2,
+  'tempering-machine': 3,
+  'tunnel-oven': 3,
+  enrober: 4,
+  'cooling-tunnel': 5,
+  'flow-wrapper': 6,
+  'robot-arm': 7,
+};
+
+export interface ProductTotal {
+  product: Product;
+  good: number;
+  scrap: number;
+  /** Machines making it right now. */
+  running: number;
+}
+
+/** The shift's output by product, each counted at the last step that makes it, most first. */
+export function productTotals(machines: ReadonlyArray<{ type: string; snapshot: MachineSnapshot }>): ProductTotal[] {
+  const lastStage = new Map<string, number>();
+  for (const { type, snapshot } of machines) {
+    for (const name of Object.keys(snapshot.shiftByProduct)) {
+      lastStage.set(name, Math.max(lastStage.get(name) ?? 0, STAGE[type] ?? 1));
+    }
+  }
+  const totals = new Map<string, ProductTotal>();
+  for (const { type, snapshot } of machines) {
+    for (const [name, made] of Object.entries(snapshot.shiftByProduct)) {
+      if ((STAGE[type] ?? 1) !== lastStage.get(name)) continue;
+      const total = totals.get(name) ?? { product: made.product, good: 0, scrap: 0, running: 0 };
+      total.good += made.good;
+      total.scrap += made.scrap;
+      totals.set(name, total);
+    }
+    const current = snapshot.order?.product.name;
+    if (current && snapshot.status === 'running') {
+      const total = totals.get(current) ?? { product: snapshot.order!.product, good: 0, scrap: 0, running: 0 };
+      total.running += 1;
+      totals.set(current, total);
+    }
+  }
+  return [...totals.values()].sort((a, b) => a.product.unit.localeCompare(b.product.unit) || b.good - a.good);
 }
 
 /** The shift the view covers: it starts at 06:00. */

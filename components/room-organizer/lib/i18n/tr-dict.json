@@ -1521,5 +1521,12 @@
  "Bushing Ø30": "Burç Ø30",
  "Bracket 2 mm": "Braket 2 mm",
  "Biscuit Tray": "Bisküvi Tepsisi",
- "Bottle Cap": "Şişe Kapağı"
+ "Bottle Cap": "Şişe Kapağı",
+ "Products this shift": "Bu Vardiyada Üretilenler",
+ "varieties": "çeşit",
+ "good output and scrap": "sağlam üretim ve fire",
+ "Nothing made yet this shift.": "Bu vardiyada henüz üretim yok.",
+ "machine": "makinede",
+ "machines": "makinede",
+ "Products made this shift": "Bu vardiyada üretilen ürünler"
 }

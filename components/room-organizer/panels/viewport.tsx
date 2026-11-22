@@ -15,8 +15,10 @@ import { EDIT_KEYS, formatBinding, keyBinding, withShortcut } from '../lib/keyma
 import { Icon, iconForItem } from '../plotcraft/icon';
 import { ChipButton, ChipNameField } from './chip-controls';
 import { Minimap } from './minimap';
+import { MachineHoverCard } from './production-panel';
 import { WalkHud, type WalkHudProps } from './walk-hud';
 import { WallDrawChip, type WallDrawStatus } from './wall-draw-chip';
+import type { ProductionRow } from '../hooks/use-production';
 import type { FurnitureItem, RoomLayout, Vec2 } from '../lib/types';
 import type { FloorLayout } from '../lib/types';
 
@@ -27,6 +29,8 @@ export interface HoverState {
   item: FurnitureItem;
   clientX: number;
   clientY: number;
+  /** The machine's production while the production view is on (factory fork). */
+  production?: ProductionRow | null;
 }
 
 export interface ViewportProps {
@@ -412,8 +416,22 @@ function HoverTooltip({ hover, containerRef }: HoverTooltipProps): JSX.Element |
   const canvas = containerRef.current;
   if (!canvas) return null;
   const rect = canvas.getBoundingClientRect();
-  const x = Math.max(8, Math.min(rect.width - 220, hover.clientX - rect.left + 14));
-  const y = Math.max(8, Math.min(rect.height - 70, hover.clientY - rect.top + 14));
+  // A machine's production card is bigger than the name-and-price tip.
+  const machine = hover.production ?? null;
+  const [w, h] = machine ? [330, 190] : [220, 70];
+  const x = Math.max(8, Math.min(rect.width - w, hover.clientX - rect.left + 14));
+  const y = Math.max(8, Math.min(rect.height - h, hover.clientY - rect.top + 14));
+
+  if (machine) {
+    return (
+      <div
+        className="pointer-events-none pc-glass pc-glass--dark"
+        style={{ position: 'absolute', left: x, top: y, padding: '10px 12px', borderRadius: 12, zIndex: 50 }}
+      >
+        <MachineHoverCard row={machine} />
+      </div>
+    );
+  }
 
   return (
     <div
@@ -552,7 +570,7 @@ function ViewportOverlays(props: ViewportProps): JSX.Element {
         />
       )}
 
-      {props.hover && props.hover.item.id !== props.selectedItem?.id && (
+      {props.hover && (props.hover.production || props.hover.item.id !== props.selectedItem?.id) && (
         <HoverTooltip hover={props.hover} containerRef={props.canvasRef} />
       )}
     </>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatDuration, isTrackedMachine, machinePlan, machineSnapshot, shiftClock } from './production';
+import { formatDuration, isTrackedMachine, machinePlan, machineSnapshot, productTotals, shiftClock } from './production';
 
 describe('production prototype', () => {
   it('tracks machines, not furniture', () => {
@@ -48,5 +48,24 @@ describe('production prototype', () => {
     expect(formatDuration(85)).toBe('1 h 25 min');
     expect(formatDuration(12)).toBe('12 min');
     expect(formatDuration(0.5)).toBe('< 1 min');
+  });
+});
+
+describe('product totals', () => {
+  it('counts a product once, at the last step that makes it', () => {
+    const at = 5;
+    const machines = [
+      { id: 'm', type: 'rotary-moulder' },
+      { id: 'o', type: 'tunnel-oven' },
+      { id: 'c', type: 'cooling-tunnel' },
+    ].map((m) => ({ type: m.type, snapshot: machineSnapshot(machinePlan(m)!, at) }));
+    const totals = productTotals(machines);
+    const cooled = machines[2]!.snapshot.shiftByProduct['Cocoa Biscuit'];
+    const cocoa = totals.find((t) => t.product.name === 'Cocoa Biscuit');
+    if (cooled && cocoa) expect(cocoa.good).toBeCloseTo(cooled.good, 6);
+    for (const t of totals) {
+      expect(t.good).toBeGreaterThanOrEqual(0);
+      expect(t.scrap).toBeGreaterThanOrEqual(0);
+    }
   });
 });

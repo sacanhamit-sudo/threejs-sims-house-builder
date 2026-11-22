@@ -22,7 +22,9 @@
 > - **Üretim takibi (prototip)**: üstteki **ÜRETİM** düğmesi makineleri
 >   duruma göre renklendirir (çalışıyor yeşil, ayar sarı, arıza kırmızı, boşta
 >   gri) ve bir panel açar: her makinenin ürünü, iş emri, ilerlemesi, kalan
->   süresi, firesi ve OEE'si; vardiya özeti. Veriler şimdilik örnek ve
+>   süresi, firesi ve OEE'si; vardiya özeti. Soldaki panel bu vardiyada üretilen ürün çeşitlerini,
+>   miktarlarını ve firelerini gösterir; bir makinenin üzerine gelince aynı bilgiler
+>   açılır kartta görünür. Veriler şimdilik örnek ve
 >   simülasyon; `lib/production/production.ts` içindeki `machinePlan` bir MES
 >   veya ERP beslemesiyle değiştirilecek nokta.
 > - **Bisküvi ve Çikolata Fabrikası şablonu** (36 × 24 m, üç kat):

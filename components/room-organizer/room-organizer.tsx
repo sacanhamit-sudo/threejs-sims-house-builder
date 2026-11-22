@@ -89,7 +89,7 @@ import { ItemContextPopover } from './panels/item-context-popover';
 import { LotBadge } from './panels/lot-badge';
 import { PlacementHint } from './panels/placement-hint';
 import { PlanCalibrationChip } from './panels/plan-calibration-chip';
-import { ProductionPanel, ProductionToggle } from './panels/production-panel';
+import { ProductionPanel, ProductionToggle, ProductSummaryPanel } from './panels/production-panel';
 import { SidebarDrawer } from './panels/sidebar-drawer';
 import { StatusToastHost } from './panels/status-toast';
 import { TouchModeToggle } from './panels/touch-mode-toggle';
@@ -896,6 +896,7 @@ export function RoomOrganizer(): JSX.Element {
   // Production tracking prototype (factory fork): status colours on the machines and the panel.
   const [productionOpen, setProductionOpen] = useState(false);
   const production = useProduction({ enabled: productionOpen, layout, sceneRef, threeModuleRef, invalidate });
+  const productionRowsById = useMemo(() => new Map(production.rows.map((row) => [row.item.id, row])), [production.rows]);
   const focusMachine = useEvent((floorIndex: number, id: string) => {
     if (floorIndex !== activeFloorIndex) actions.setActiveFloorIndex(floorIndex);
     // Selected once the floor has switched, so the item is on the active floor.
@@ -1219,7 +1220,9 @@ export function RoomOrganizer(): JSX.Element {
           hover &&
           (() => {
             const item = activeFloor.items.find((entry) => entry.id === hover.id);
-            return item ? { item, clientX: hover.clientX, clientY: hover.clientY } : null;
+            if (!item) return null;
+            const production = productionOpen ? productionRowsById.get(item.id) ?? null : null;
+            return { item, clientX: hover.clientX, clientY: hover.clientY, production };
           })()
         }
         onCatalogDrop={(clientX, clientY, key) => {
@@ -1249,6 +1252,7 @@ export function RoomOrganizer(): JSX.Element {
           onToggle={() => setProductionOpen((open) => !open)}
         />
       )}
+      {productionOpen && !touring && <ProductSummaryPanel rows={production.rows} />}
       {productionOpen && !touring && (
         <ProductionPanel
           rows={production.rows}
