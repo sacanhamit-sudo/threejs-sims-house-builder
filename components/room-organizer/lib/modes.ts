@@ -16,6 +16,7 @@ export type BuildToolKey = FurnitureCategory | 'walls';
 export const BUILD_TOOLS: readonly BuildToolKey[] = [
   'structure',
   'walls',
+  'factory',
   'seating',
   'tables',
   'bedroom',
@@ -47,6 +48,7 @@ const BUILD_TOOL_LABELS: Readonly<Record<BuildToolKey, string>> = {
   security: 'Security',
   outdoor: 'Outdoor',
   people: 'People',
+  factory: 'Factory',
 };
 
 export function buildToolLabel(key: BuildToolKey): string {

@@ -1,3 +1,4 @@
+import { translate } from '../lib/i18n/i18n';
 import { STAIR_HATCH_SPACING_M, stairArrow, stairCutHatch, stairTreadSegments, stairwellOutlines, type PlacedItem, type PlanPoint } from '../lib/plan-export/plan-geometry';
 import { planRailInset, stairwellRailSegments } from '../lib/stairwell-rail';
 import type { View2DTransform } from './render';
@@ -150,7 +151,7 @@ export function drawStairwellHoles(
     ctx.fillStyle = '#333';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('open below', lx, ly);
+    ctx.fillText(translate('open below'), lx, ly);
   }
   // The guard rail round the hole (#923): a solid line a few pixels inside its dashed edge.
   ctx.strokeStyle = '#333';

@@ -61,7 +61,13 @@ components/
     │   └── index.ts                    Barrel
     ├── lib/                             Pure domain code, no React/Three
     │   ├── types.ts                     RoomLayout / FloorLayout / ViewSettings / etc.
-    │   ├── constants.ts                 Catalog (78 items in 12 categories) with colour variants, templates, MAX_FLOORS
+    │   ├── i18n/                        Interface language, Turkish / English (factory fork)
+    │   │   ├── i18n.ts                  getLang/setLang, translate(): English text is the key, exact or by template
+    │   │   ├── dom-translator.ts        Applies translate() to rendered text and attributes; restores English on switch
+    │   │   ├── i18n-root.tsx            Starts the DOM translator from the root layout
+    │   │   ├── language-picker.tsx      TR / EN radios and the useLang() hook
+    │   │   └── tr-dict.json             The Turkish dictionary
+    │   ├── constants.ts                 Catalog (94 items in 13 categories) with colour variants, templates, MAX_FLOORS
     │   ├── schema.ts                    Type guards, legacy migration, caps that repair (never refuse)
     │   ├── geometry.ts                  Collision (items, keep-out, partitions), bounds, snap, auto-organize
     │   ├── collision-reason.ts          The sentence for why an item shows red (rules live in geometry.ts)
@@ -198,6 +204,7 @@ components/
     │   │   ├── builders-seating.ts      Chair, armchair, bench, sofa
     │   │   ├── builders-bedroom.ts      Bed, nightstand, dresser
     │   │   ├── builders-tables.ts       Table, desk, coffee/side/dining
+    │   │   ├── builders-factory.ts      Factory equipment: CNC, lathe, press, moulding machine, conveyor, pallets, racking, forklift, robot arm, cabinet, tank, compressor, barrier, lockers
     │   │   ├── builders-storage.ts      Bookshelf, cabinet
     │   │   ├── builders-kitchen.ts      Fridge, stove, sink, counter
     │   │   ├── builders-bathroom.ts     Toilet, bathtub, shower

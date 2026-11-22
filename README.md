@@ -1,5 +1,23 @@
 # Three.js Sims-like House Builder
 
+> **🏭 Fabrika sürümü (Türkçe / English)**
+>
+> Bu çatal, orijinal projeye şunları ekler:
+>
+> - **Türkçe arayüz** ve **TR / EN dil seçimi** — karşılama ekranında ve
+>   *Görünüm seçenekleri* menüsünde. Seçim tarayıcıda hatırlanır; ilk açılışta
+>   tarayıcı dili Türkçe ise arayüz Türkçe gelir. Çeviriler
+>   `components/room-organizer/lib/i18n/tr-dict.json` dosyasındadır: anahtar
+>   İngilizce metnin kendisi, değer Türkçesidir. Yeni bir metni çevirmek için
+>   bu dosyaya bir satır eklemek yeterli.
+> - **Fabrika kategorisi** (16 ekipman): CNC işleme merkezi, torna, hidrolik
+>   pres, plastik enjeksiyon makinesi, bantlı konveyör, yüklü palet, palet
+>   rafı, metal raf, forklift, çalışma tezgâhı, endüstriyel robot kol, kumanda
+>   panosu, depolama tankı, hava kompresörü, güvenlik bariyeri, personel
+>   dolapları.
+> - **Üç Katlı Fabrika şablonu**: zeminde üretim holü (4,5 m kat yüksekliği),
+>   1. katta montaj ve depo, 2. katta ofisler; katlar merdivenle bağlı.
+
 [![Live Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://ch-bas.github.io/threejs-sims-house-builder/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)](tsconfig.json)
@@ -25,7 +43,7 @@ link.
   roof with dormers.
 - **Walls and openings**: exterior and drawn interior walls, doors and windows
   that cut through them, per-wall paint and procedural floor and wall patterns.
-- **78 furniture items** in 12 categories, ready-made and your own furniture
+- **94 furniture items** in 13 categories, ready-made and your own furniture
   sets, themes, room templates and a budget you can make strict.
 - **Editing in 3D and on the 2D plan**: drag with snapping, multi-select,
   groups, align and distribute, copy and paste, locks, and undo/redo for

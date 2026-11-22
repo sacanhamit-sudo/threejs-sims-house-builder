@@ -10,6 +10,7 @@ import { floorKeepOut } from '../lib/floor-keep-out';
 import { floorPlanFitOf, floorPlanPlacement } from '../lib/floor-plan-fit';
 import { cutoutRect, rotatedHalfExtents, shellWalls } from '../lib/footprint';
 import { areaInUnit, areaUnitSymbol, formatArea, formatMetres, formatSize, getDisplayUnit, type LengthUnit } from '../lib/format';
+import { translate } from '../lib/i18n/i18n';
 import { INTERIOR_WALL_THICKNESS, isOpening } from '../lib/opening-snap';
 import { floorBelowUnderlay, type PlanSegment } from '../lib/plan-export/plan-geometry';
 import { planDrawOrder } from '../lib/plan-order';
@@ -525,11 +526,12 @@ function drawRoomsToName(
   ctx.fillStyle = '#1d4ed8';
   for (const room of rooms) {
     const spot = zoneCanvasRect(zoneLabelSpot(regionShape(room)), layout, offsetX, offsetY, scale);
-    if (ctx.measureText(ROOM_TO_NAME_LABEL).width > spot.w - 4) continue;
+    const nameLabel = translate(ROOM_TO_NAME_LABEL);
+    if (ctx.measureText(nameLabel).width > spot.w - 4) continue;
     const x = offsetX + (room.anchor.x + layout.width / 2) * scale;
     const y = offsetY + (room.anchor.z + layout.height / 2) * scale;
-    ctx.strokeText(ROOM_TO_NAME_LABEL, x, y);
-    ctx.fillText(ROOM_TO_NAME_LABEL, x, y);
+    ctx.strokeText(nameLabel, x, y);
+    ctx.fillText(nameLabel, x, y);
   }
   ctx.restore();
 }

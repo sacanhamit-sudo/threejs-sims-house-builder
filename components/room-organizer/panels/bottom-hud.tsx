@@ -50,7 +50,7 @@ export const BottomHud = memo(function BottomHud({ selectedWall, onSelectedWallC
   const gameMode = useEditorView((state) => state.gameMode);
   const { selectOnly, setSelectedItemId, setExtraSelectedIds } = useSelection();
   const setMode = useSetGameMode(onSelectedWallChange);
-  const [buildToolCategory, setBuildToolCategory] = useState<BuildToolCategory>('seating');
+  const [buildToolCategory, setBuildToolCategory] = useState<BuildToolCategory>('factory');
   const hudRef = useRef<HTMLDivElement>(null);
   const leftColumnRef = useRef<HTMLDivElement>(null);
   // Held: Apply To moved to All from the keyboard, focus still in the panel.

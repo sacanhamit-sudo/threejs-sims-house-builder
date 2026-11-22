@@ -5,6 +5,7 @@ import { useDialogFocus } from '../hooks/use-dialog-focus';
 import { offerFirstSteps } from '../hooks/use-first-steps';
 import { useLoadTemplate } from '../hooks/use-load-template';
 import { ROOM_TEMPLATES, type RoomTemplateKey } from '../lib/constants';
+import { LanguagePicker } from '../lib/i18n/language-picker';
 import { parseLayoutJson } from '../lib/persistence';
 import { isUntouched, subscribeHouseReplaced } from '../lib/restore-point';
 import { safeGetItem, safeSetItem } from '../lib/safe-storage';
@@ -160,6 +161,7 @@ export function WelcomeBanner(): JSX.Element | null {
               A 3D home builder for the modern web
             </p>
           </div>
+          <LanguagePicker style={{ alignSelf: 'flex-start', flexShrink: 0 }} />
         </div>
 
         <p className="pc-body" style={{ margin: '0 0 12px', fontSize: 13, lineHeight: 1.45, flexShrink: 0 }}>

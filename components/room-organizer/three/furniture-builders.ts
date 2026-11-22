@@ -6,6 +6,11 @@ import {
   buildWallShelf, buildWallClock, buildCandles, buildBooksStack,
 } from './builders/builders-decor';
 import { buildTV, buildComputer, buildWiFi, buildRouter, buildCCTV, buildSecurityCamera } from './builders/builders-electronics';
+import {
+  buildCncMachine, buildLathe, buildPress, buildInjectionMolder, buildConveyor, buildPallet,
+  buildPalletRack, buildIndustrialShelf, buildForklift, buildWorkbench, buildRobotArm,
+  buildControlCabinet, buildStorageTank, buildCompressor, buildSafetyBarrier, buildLocker,
+} from './builders/builders-factory';
 import { buildFridge, buildStove, buildSink, buildCounter, buildMicrowave } from './builders/builders-kitchen';
 import { buildLamp, buildPendantLight, buildLamppost, buildCeilingFan } from './builders/builders-lighting';
 import {
@@ -97,6 +102,23 @@ const BUILDERS: Record<string, FurnitureBuilder> = {
   stairs: buildStairs,
   door: buildDoor,
   window: buildWindow,
+  // Factory equipment
+  'cnc-machine': buildCncMachine,
+  lathe: buildLathe,
+  'hydraulic-press': buildPress,
+  'injection-molder': buildInjectionMolder,
+  conveyor: buildConveyor,
+  pallet: buildPallet,
+  'pallet-rack': buildPalletRack,
+  'industrial-shelf': buildIndustrialShelf,
+  forklift: buildForklift,
+  workbench: buildWorkbench,
+  'robot-arm': buildRobotArm,
+  'control-cabinet': buildControlCabinet,
+  'storage-tank': buildStorageTank,
+  compressor: buildCompressor,
+  'safety-barrier': buildSafetyBarrier,
+  locker: buildLocker,
 };
 
 /**

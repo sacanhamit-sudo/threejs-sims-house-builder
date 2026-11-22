@@ -7,6 +7,7 @@ import { useAppleKeys } from '../hooks/use-apple-keys';
 import { reopenFirstSteps } from '../hooks/use-first-steps';
 import { APP_VERSION } from '../lib/app-version';
 import { LENGTH_UNITS, type LengthUnit } from '../lib/format';
+import { LanguagePicker } from '../lib/i18n/language-picker';
 import { withShortcut } from '../lib/keymap';
 import { enterPhotoMode } from '../lib/photo-mode';
 import { QUALITY_CHOICES, saveQualityChoice, type QualityChoice } from '../lib/render-quality';
@@ -212,6 +213,7 @@ function HelpEntries({ onGettingStarted }: { onGettingStarted(): void }): JSX.El
       >
         Getting started
       </button>
+      <LanguagePicker />
     </div>
   );
 }

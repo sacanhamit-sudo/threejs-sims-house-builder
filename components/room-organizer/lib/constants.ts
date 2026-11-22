@@ -78,6 +78,7 @@ export const CATEGORIES: readonly CategoryMeta[] = [
   { key: 'outdoor', label: 'Outdoor', icon: '🌳' },
   { key: 'people', label: 'People', icon: '🧍' },
   { key: 'structure', label: 'Structure', icon: '🪜' },
+  { key: 'factory', label: 'Factory', icon: '🏭' },
 ] as const;
 
 export const FURNITURE_CATALOG = [
@@ -216,9 +217,33 @@ export const FURNITURE_CATALOG = [
   { type: 'door', category: 'structure', name: 'Archway', width: 1.2, depth: 0.12, height: 2.2, color: '#EFE8DA', icon: '🚪', price: 180, openingStyle: 'arch' },
   { type: 'window', category: 'structure', name: 'Tall Window', width: 0.8, depth: 0.12, height: 2.0, color: '#90CAF9', icon: '🪟', price: 360, sillHeight: 0.3, openingStyle: 'tall' },
   { type: 'window', category: 'structure', name: 'Picture Window', width: 1.8, depth: 0.12, height: 1.4, color: '#90CAF9', icon: '🪟', price: 420, openingStyle: 'fixed' },
+
+  // Factory equipment
+  {
+    type: 'cnc-machine', category: 'factory', name: 'CNC Machining Centre', width: 2.6, depth: 1.9, height: 2.5, color: '#D5DBDF', icon: '🏭', price: 85000,
+    variants: [{ name: 'Grey', color: '#D5DBDF' }, { name: 'Blue', color: '#4F7CAC' }, { name: 'Green', color: '#6E9C7F' }],
+  },
+  { type: 'lathe', category: 'factory', name: 'Lathe', width: 2.6, depth: 1.0, height: 1.5, color: '#6E9C7F', icon: '⚙️', price: 32000 },
+  { type: 'hydraulic-press', category: 'factory', name: 'Hydraulic Press', width: 1.8, depth: 1.4, height: 2.7, color: '#4F7CAC', icon: '🔩', price: 46000 },
+  { type: 'injection-molder', category: 'factory', name: 'Injection Moulding Machine', width: 4.8, depth: 1.6, height: 2.2, color: '#D5DBDF', icon: '🧪', price: 120000 },
+  {
+    type: 'conveyor', category: 'factory', name: 'Belt Conveyor', width: 4.0, depth: 0.8, height: 1.2, color: '#3D6FB6', icon: '➡️', price: 6500,
+    variants: [{ name: 'Blue', color: '#3D6FB6' }, { name: 'Grey', color: '#8A9399' }, { name: 'Yellow', color: '#E6B422' }],
+  },
+  { type: 'pallet', category: 'factory', name: 'Loaded Pallet', width: 1.2, depth: 0.8, height: 1.2, color: '#B08A5A', icon: '📦', price: 150 },
+  { type: 'pallet-rack', category: 'factory', name: 'Pallet Rack', width: 2.8, depth: 1.1, height: 2.9, color: '#2F5DA8', icon: '🗄️', price: 2400 },
+  { type: 'industrial-shelf', category: 'factory', name: 'Metal Shelving', width: 2.0, depth: 0.6, height: 2.0, color: '#7D878D', icon: '🗃️', price: 450 },
+  { type: 'forklift', category: 'factory', name: 'Forklift', width: 2.4, depth: 1.2, height: 2.2, color: '#F2A900', icon: '🚜', price: 28000 },
+  { type: 'workbench', category: 'factory', name: 'Workbench', width: 1.8, depth: 0.8, height: 1.6, color: '#455A64', icon: '🛠️', price: 900 },
+  { type: 'robot-arm', category: 'factory', name: 'Industrial Robot Arm', width: 1.6, depth: 1.6, height: 2.0, color: '#F26B1D', icon: '🦾', price: 65000 },
+  { type: 'control-cabinet', category: 'factory', name: 'Control Cabinet', width: 1.2, depth: 0.5, height: 2.0, color: '#C9CED1', icon: '🎛️', price: 7500 },
+  { type: 'storage-tank', category: 'factory', name: 'Storage Tank', width: 1.8, depth: 1.8, height: 2.8, color: '#B8C2C8', icon: '🛢️', price: 14000 },
+  { type: 'compressor', category: 'factory', name: 'Air Compressor', width: 1.6, depth: 0.8, height: 1.3, color: '#C0392B', icon: '💨', price: 5200 },
+  { type: 'safety-barrier', category: 'factory', name: 'Safety Barrier', width: 2.0, depth: 0.15, height: 1.0, color: '#F5C518', icon: '🚧', price: 180 },
+  { type: 'locker', category: 'factory', name: 'Staff Lockers', width: 1.2, depth: 0.5, height: 1.9, color: '#5C7A99', icon: '🔐', price: 600 },
 ] as const satisfies readonly CatalogItem[];
 
-export type RoomTemplateKey = 'bedroom' | 'livingRoom' | 'office' | 'kitchen' | 'bathroom' | 'studio' | 'twoStory';
+export type RoomTemplateKey = 'bedroom' | 'livingRoom' | 'office' | 'kitchen' | 'bathroom' | 'studio' | 'twoStory' | 'factory';
 
 function singleFloorTemplate(
   name: string,
@@ -272,6 +297,129 @@ function templateOpening(
           : { position: { x: -halfW, z: along }, rotation: Math.PI / 2 };
   return { id, type, category: 'structure', ...catalog, ...seat };
 }
+
+
+/**
+ * A placed copy of the catalog entry named `name`, for the templates below:
+ * the size, colour and price stay the catalog's.
+ */
+function placed(
+  id: string,
+  name: string,
+  x: number,
+  z: number,
+  rotation = 0,
+  extra: Partial<FloorLayout['items'][number]> = {}
+): FloorLayout['items'][number] {
+  const entry: CatalogItem | undefined = FURNITURE_CATALOG.find((c) => c.name === name);
+  if (!entry) throw new Error(`No catalog item named ${name}`);
+  const { variants: _variants, ...item } = entry;
+  return { ...item, id, position: { x, z }, rotation, ...extra };
+}
+
+const FACTORY_SIZE = { width: 18, depth: 12 };
+
+/** A three-storey factory: production hall, assembly and storage, offices (factory fork). */
+const FACTORY_TEMPLATE: Omit<RoomLayout, 'id'> = {
+  name: 'Three-Storey Factory',
+  width: FACTORY_SIZE.width,
+  height: FACTORY_SIZE.depth,
+  roof: { style: 'flat', color: '#546e7a' },
+  floors: [
+    {
+      id: 'ground',
+      name: 'Production Hall',
+      floorColor: '#9E9E9E',
+      floorPattern: 'concrete',
+      wallPattern: 'panel',
+      height: 4.5,
+      items: [
+        placed('gf-cnc-1', 'CNC Machining Centre', -7.0, -4.0),
+        placed('gf-cnc-2', 'CNC Machining Centre', -4.3, -4.0, 0, { color: '#4F7CAC' }),
+        placed('gf-lathe', 'Lathe', 0.8, -4.6),
+        placed('gf-press', 'Hydraulic Press', 3.5, -4.3),
+        placed('gf-cabinet', 'Control Cabinet', 6.0, -5.6),
+        placed('gf-robot', 'Industrial Robot Arm', -4.2, 0.8),
+        placed('gf-barrier-1', 'Safety Barrier', -4.2, -0.45),
+        placed('gf-barrier-2', 'Safety Barrier', -4.2, 2.05),
+        placed('gf-conveyor-1', 'Belt Conveyor', -1.1, 0.8),
+        placed('gf-conveyor-2', 'Belt Conveyor', 3.0, 0.8),
+        placed('gf-molder', 'Injection Moulding Machine', -5.5, 4.6, Math.PI),
+        placed('gf-compressor', 'Air Compressor', -0.5, 5.4, Math.PI),
+        placed('gf-forklift', 'Forklift', 2.5, 3.8),
+        placed('gf-pallet-1', 'Loaded Pallet', 4.8, 5.3),
+        placed('gf-pallet-2', 'Loaded Pallet', 4.8, 3.9),
+        placed('gf-workbench', 'Workbench', 8.3, -1.5, -Math.PI / 2),
+        placed('gf-stairs', 'Stairs', 7.5, 3.5, 0, { depth: 3.6, height: 4.5 }),
+        placed('gf-door', 'Double Door', -1.6, -FACTORY_SIZE.depth / 2),
+        placed('gf-gate', 'Sliding Door', 2.5, FACTORY_SIZE.depth / 2, Math.PI),
+        templateOpening('gf-window-1', 'window', 'west', -1, FACTORY_SIZE),
+        templateOpening('gf-window-2', 'window', 'west', 1.5, FACTORY_SIZE),
+        templateOpening('gf-window-3', 'window', 'east', -4, FACTORY_SIZE),
+      ],
+    },
+    {
+      id: 'first',
+      name: 'Assembly & Storage',
+      floorColor: '#B0BEC5',
+      floorPattern: 'concrete',
+      height: 3.2,
+      items: [
+        placed('ff-rack-1', 'Pallet Rack', -6.5, 5.35, Math.PI),
+        placed('ff-rack-2', 'Pallet Rack', -3.5, 5.35, Math.PI),
+        placed('ff-rack-3', 'Pallet Rack', -0.5, 5.35, Math.PI),
+        placed('ff-shelf-1', 'Metal Shelving', -8.6, -2.0, Math.PI / 2),
+        placed('ff-shelf-2', 'Metal Shelving', -8.6, 0.5, Math.PI / 2),
+        placed('ff-bench-1', 'Workbench', -4.0, -1.0),
+        placed('ff-bench-2', 'Workbench', -1.0, -1.0),
+        placed('ff-bench-3', 'Workbench', 2.0, -1.0),
+        placed('ff-conveyor', 'Belt Conveyor', -1.0, 2.2),
+        placed('ff-pallet-1', 'Loaded Pallet', 3.6, 3.4),
+        placed('ff-pallet-2', 'Loaded Pallet', 5.0, 3.4),
+        placed('ff-lockers', 'Staff Lockers', 4.5, -5.5),
+        placed('ff-stairs', 'Stairs', 7.5, -3.0, 0, { depth: 3.6, height: 3.2 }),
+        templateOpening('ff-window-1', 'window', 'north', -5, FACTORY_SIZE),
+        templateOpening('ff-window-2', 'window', 'north', -2, FACTORY_SIZE),
+        templateOpening('ff-window-3', 'window', 'north', 2.5, FACTORY_SIZE),
+        templateOpening('ff-window-4', 'window', 'west', 3.5, FACTORY_SIZE),
+      ],
+    },
+    {
+      id: 'second',
+      name: 'Offices',
+      floorColor: '#D7CCC8',
+      floorPattern: 'carpet',
+      wallPattern: 'plaster',
+      height: 3.2,
+      items: [
+        placed('sf-desk-1', 'Desk', -6.0, -3.0),
+        placed('sf-pc-1', 'Computer', -6.0, -3.0),
+        placed('sf-chair-1', 'Chair', -6.0, -2.3, Math.PI),
+        placed('sf-desk-2', 'Desk', -3.0, -3.0),
+        placed('sf-pc-2', 'Computer', -3.0, -3.0),
+        placed('sf-chair-2', 'Chair', -3.0, -2.3, Math.PI),
+        placed('sf-desk-3', 'Desk', 0.0, -3.0),
+        placed('sf-pc-3', 'Computer', 0.0, -3.0),
+        placed('sf-chair-3', 'Chair', 0.0, -2.3, Math.PI),
+        placed('sf-meeting', 'Dining Table', -3.0, 3.0),
+        placed('sf-mchair-1', 'Dining Chair', -3.5, 2.2, Math.PI),
+        placed('sf-mchair-2', 'Dining Chair', -2.5, 2.2, Math.PI),
+        placed('sf-mchair-3', 'Dining Chair', -3.5, 3.8),
+        placed('sf-mchair-4', 'Dining Chair', -2.5, 3.8),
+        placed('sf-shelf', 'Bookshelf', 3.0, -5.6),
+        placed('sf-plant-1', 'House Plant', -8.3, -5.3),
+        placed('sf-plant-2', 'House Plant', 1.5, 5.3),
+        placed('sf-sofa', 'Sofa', 4.0, 4.9, Math.PI),
+        placed('sf-coffee', 'Coffee Table', 4.0, 3.6),
+        templateOpening('sf-window-1', 'window', 'north', -6, FACTORY_SIZE),
+        templateOpening('sf-window-2', 'window', 'north', -3, FACTORY_SIZE),
+        templateOpening('sf-window-3', 'window', 'north', 2, FACTORY_SIZE),
+        templateOpening('sf-window-4', 'window', 'south', -6, FACTORY_SIZE),
+        templateOpening('sf-window-5', 'window', 'south', 0, FACTORY_SIZE),
+      ],
+    },
+  ],
+};
 
 export const ROOM_TEMPLATES = {
   bedroom: singleFloorTemplate('Bedroom', 4, 3.5, '#F5E6D3', [
@@ -379,4 +527,5 @@ export const ROOM_TEMPLATES = {
       },
     ],
   },
+  factory: FACTORY_TEMPLATE,
 } as const satisfies Record<RoomTemplateKey, Omit<RoomLayout, 'id'>>;

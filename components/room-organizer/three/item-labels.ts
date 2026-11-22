@@ -1,3 +1,4 @@
+import { translate } from '../lib/i18n/i18n';
 import { mountBand } from '../lib/mount-band';
 import { itemForStorey, storeyHeight } from '../lib/storeys';
 import { disposeObject } from './builder-utils';
@@ -64,7 +65,8 @@ export function renderItemLabels(
 }
 
 function createLabelSprite(THREE: ThreeModule, text: string): ThreeNS.Sprite {
-  const master = getLabelTexture(THREE, text);
+  // Names are stored in English; the label shows them in the chosen language.
+  const master = getLabelTexture(THREE, translate(text));
   // Clone per sprite so each mesh owns a disposable copy sharing the cached
   // canvas image. (`Texture.clone()` already flags needsUpdate.)
   const texture = master.clone();

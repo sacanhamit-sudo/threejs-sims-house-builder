@@ -1,4 +1,5 @@
 import { CHUNK_RELOAD_KEY, CHUNK_RELOAD_WINDOW_MS } from '@/components/room-organizer/lib/chunk-reload';
+import { I18nRoot } from '@/components/room-organizer/lib/i18n/i18n-root';
 import { fontVariables } from './fonts/fonts';
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
@@ -161,6 +162,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         <NoScriptNotice />
+        <I18nRoot />
         {children}
       </body>
     </html>

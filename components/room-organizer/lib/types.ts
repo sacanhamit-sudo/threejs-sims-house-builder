@@ -76,6 +76,23 @@ export type FurnitureType =
   | 'stairs'
   | 'door'
   | 'window'
+  // Factory equipment
+  | 'cnc-machine'
+  | 'lathe'
+  | 'hydraulic-press'
+  | 'injection-molder'
+  | 'conveyor'
+  | 'pallet'
+  | 'pallet-rack'
+  | 'industrial-shelf'
+  | 'forklift'
+  | 'workbench'
+  | 'robot-arm'
+  | 'control-cabinet'
+  | 'storage-tank'
+  | 'compressor'
+  | 'safety-barrier'
+  | 'locker'
   // Keeps the escape hatch so unknown/legacy strings from old saved layouts
   // still type-check, while the named members above document the full catalog.
   | (string & {});
@@ -111,7 +128,8 @@ export type FurnitureCategory =
   | 'decor'
   | 'outdoor'
   | 'people'
-  | 'structure';
+  | 'structure'
+  | 'factory';
 
 export interface CategoryMeta {
   key: FurnitureCategory;

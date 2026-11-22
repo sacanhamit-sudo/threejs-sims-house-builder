@@ -61,6 +61,10 @@ export type PlotcraftIconName =
   | 'target'
   | 'close'
   | 'box'
+  // Factory equipment
+  | 'factory'
+  | 'conveyor'
+  | 'forklift'
   | 'ruler'
   | 'coin'
   | 'save'
@@ -346,6 +350,26 @@ const PATHS: Record<PlotcraftIconName, ReactNode> = {
     </>
   ),
   close: <path d="M6 6l12 12M18 6L6 18" />,
+  factory: (
+    <>
+      <path d="M3 21v-11l5 3v-3l5 3v-3l5 3v-8h3v16z" />
+      <path d="M7 17h2M12 17h2M17 17h1" />
+    </>
+  ),
+  conveyor: (
+    <>
+      <path d="M5 13h14a2 2 0 0 1 0 4h-14a2 2 0 0 1 0 -4z" />
+      <path d="M7 13v-4h4v4M13 13v-3h3v3M8 20v1M16 20v1" />
+    </>
+  ),
+  forklift: (
+    <>
+      <path d="M3 17v-6h7l2 6M5 11v-5h4l1 5" />
+      <path d="M15 4v14h6M15 15h-3" />
+      <circle cx="6" cy="18" r="2" />
+      <circle cx="12" cy="18" r="1.5" />
+    </>
+  ),
   box: (
     <>
       <path d="M3 7l9 -4l9 4v10l-9 4l-9 -4z" />
@@ -757,12 +781,17 @@ const TYPE_TO_ICON: Record<string, PlotcraftIconName> = {
   person: 'person', pet: 'live',
   // structure
   door: 'door', window: 'window', stairs: 'stairs',
+  // factory
+  'cnc-machine': 'factory', lathe: 'factory', 'hydraulic-press': 'factory', 'injection-molder': 'factory',
+  conveyor: 'conveyor', pallet: 'box', 'pallet-rack': 'bookshelf', 'industrial-shelf': 'bookshelf',
+  forklift: 'forklift', workbench: 'desk', 'robot-arm': 'build', 'control-cabinet': 'cabinet',
+  'storage-tank': 'washer', compressor: 'fireplace', 'safety-barrier': 'fence', locker: 'wardrobe',
 };
 
 const CATEGORY_TO_ICON: Record<string, PlotcraftIconName> = {
   seating: 'chair', tables: 'table', bedroom: 'bed', storage: 'box',
   kitchen: 'fireplace', bathroom: 'bath', electronics: 'light',
-  security: 'vision', decor: 'plant', outdoor: 'tree', people: 'person', structure: 'window',
+  security: 'vision', decor: 'plant', outdoor: 'tree', people: 'person', structure: 'window', factory: 'factory',
 };
 
 export function iconForItem(type: string, category?: string, openingStyle?: string): PlotcraftIconName {

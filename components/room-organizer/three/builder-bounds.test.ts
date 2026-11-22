@@ -113,6 +113,10 @@ describe('hung items are built where mountBand says (#471, #470)', () => {
   });
 });
 
+describe('the factory equipment stays inside its catalog box', () => {
+  it.each(FURNITURE_CATALOG.filter((c) => c.category === 'factory').map((c) => c.type))('%s', (type) => expectInsideBox(type));
+});
+
 describe('the builders fitted in #388 and #167 stay inside their catalog box', () => {
   it.each(['lamp', 'floor-lamp', 'pendant-light', 'painting', 'bush', 'pet', 'wifi', 'router', 'pool', 'bathtub', 'microwave', 'washer', 'bar-stool', 'ceiling-fan'])(
     '%s',

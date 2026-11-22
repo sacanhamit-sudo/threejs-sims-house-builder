@@ -28,6 +28,7 @@ const TOOL_SPECS: Readonly<Record<BuildToolCategory, ToolSpec>> = {
   security:    { icon: 'vision',    hint: 'Security cameras' },
   outdoor:     { icon: 'tree',      hint: 'Outdoor' },
   people:      { icon: 'person',    hint: 'People and pets' },
+  factory:     { icon: 'factory',   hint: 'Factory equipment' },
 };
 
 export interface BuildToolsPanelProps {
