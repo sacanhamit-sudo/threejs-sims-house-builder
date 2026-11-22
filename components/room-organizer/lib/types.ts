@@ -93,6 +93,17 @@ export type FurnitureType =
   | 'compressor'
   | 'safety-barrier'
   | 'locker'
+  // Food production (biscuit and chocolate)
+  | 'dough-mixer'
+  | 'silo'
+  | 'rotary-moulder'
+  | 'tunnel-oven'
+  | 'cooling-tunnel'
+  | 'conche'
+  | 'tempering-machine'
+  | 'enrober'
+  | 'flow-wrapper'
+  | 'stainless-table'
   // Keeps the escape hatch so unknown/legacy strings from old saved layouts
   // still type-check, while the named members above document the full catalog.
   | (string & {});

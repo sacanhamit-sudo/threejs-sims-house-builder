@@ -10,6 +10,8 @@ import {
   buildCncMachine, buildLathe, buildPress, buildInjectionMolder, buildConveyor, buildPallet,
   buildPalletRack, buildIndustrialShelf, buildForklift, buildWorkbench, buildRobotArm,
   buildControlCabinet, buildStorageTank, buildCompressor, buildSafetyBarrier, buildLocker,
+  buildDoughMixer, buildSilo, buildRotaryMoulder, buildTunnelOven, buildCoolingTunnel, buildConche,
+  buildTemperingMachine, buildEnrober, buildFlowWrapper, buildStainlessTable,
 } from './builders/builders-factory';
 import { buildFridge, buildStove, buildSink, buildCounter, buildMicrowave } from './builders/builders-kitchen';
 import { buildLamp, buildPendantLight, buildLamppost, buildCeilingFan } from './builders/builders-lighting';
@@ -119,6 +121,16 @@ const BUILDERS: Record<string, FurnitureBuilder> = {
   compressor: buildCompressor,
   'safety-barrier': buildSafetyBarrier,
   locker: buildLocker,
+  'dough-mixer': buildDoughMixer,
+  silo: buildSilo,
+  'rotary-moulder': buildRotaryMoulder,
+  'tunnel-oven': buildTunnelOven,
+  'cooling-tunnel': buildCoolingTunnel,
+  conche: buildConche,
+  'tempering-machine': buildTemperingMachine,
+  enrober: buildEnrober,
+  'flow-wrapper': buildFlowWrapper,
+  'stainless-table': buildStainlessTable,
 };
 
 /**

@@ -263,31 +263,30 @@ export function buildConveyor(ctx: BuilderContext): ThreeNS.Group {
   return group;
 }
 
-/** A wooden pallet with its slats, `w` × `d`, `h` tall, on the floor at y = `y0`. */
+/**
+ * A wooden pallet, `w` × `d`, `h` tall, on the floor at y = `y0`: three
+ * stringers under three deck boards. Kept to a few parts, since a warehouse
+ * can hold hundreds of pallets.
+ */
 function pallet(ctx: BuilderContext, group: ThreeNS.Group, w: number, d: number, h: number, x: number, y0: number, z: number): void {
   const wood = surfaceMaterial(ctx, PALLET_WOOD, 'woodOiled', { detailed: true });
-  const deck = h * 0.25;
-  for (const dz of [-0.4, 0, 0.4]) box(ctx, group, w, h - deck * 2, d * 0.12, wood, x, y0 + h / 2, z + dz * d);
-  for (let i = 0; i < 5; i++) box(ctx, group, w * 0.16, deck, d, wood, x - w * 0.42 + i * w * 0.21, y0 + h - deck / 2, z);
-  for (const dx of [-0.42, 0, 0.42]) box(ctx, group, w * 0.16, deck, d, wood, x + dx * w, y0 + deck / 2, z);
+  const deck = h * 0.3;
+  for (const dz of [-0.4, 0, 0.4]) box(ctx, group, w, h - deck, d * 0.14, wood, x, y0 + (h - deck) / 2, z + dz * d);
+  for (const dx of [-0.36, 0, 0.36]) box(ctx, group, w * 0.26, deck, d, wood, x + dx * w, y0 + h - deck / 2, z);
 }
 
-/** Cartons stacked on a pallet, up to `h` tall. */
+/** Cartons stacked on a pallet, up to `h` tall: one block per layer, in alternating shades. */
 function palletLoad(ctx: BuilderContext, group: ThreeNS.Group, w: number, d: number, h: number, x: number, y0: number, z: number, seed: number): void {
-  const carton = surfaceMaterial(ctx, CARDBOARD, 'painted');
-  const tape = surfaceMaterial(ctx, 0xa57c52, 'painted');
+  const shades = [surfaceMaterial(ctx, CARDBOARD, 'painted'), surfaceMaterial(ctx, 0xb88d5f, 'painted')];
   const rows = Math.max(1, Math.round(h / 0.35));
   const rowH = h / rows;
   for (let r = 0; r < rows; r++) {
-    // Leave the odd carton out of the top row so a load doesn't read as one block.
-    const gap = r === rows - 1 && (seed + r) % 2 === 0;
-    for (const [cx, cz] of [[-0.25, -0.25], [0.25, -0.25], [-0.25, 0.25], [0.25, 0.25]] as const) {
-      if (gap && cx > 0 && cz > 0) continue;
-      const bx = x + cx * w * 0.98;
-      const bz = z + cz * d * 0.98;
-      box(ctx, group, w * 0.48, rowH * 0.96, d * 0.48, carton, bx, y0 + rowH * (r + 0.5), bz);
-      box(ctx, group, w * 0.08, 0.005, d * 0.49, tape, bx, y0 + rowH * (r + 1) - rowH * 0.02 + 0.003, bz);
-    }
+    // The top layer is a part layer on every other pallet, so a load doesn't read as one block.
+    const partial = r === rows - 1 && rows > 1 && (seed + r) % 2 === 0;
+    const lw = partial ? w * 0.48 : w;
+    const lx = partial ? x - w * 0.25 : x;
+    const shade = shades[r % 2] ?? shades[0];
+    if (shade) box(ctx, group, lw * 0.98, rowH * 0.97, d * 0.98, shade, lx, y0 + rowH * (r + 0.5), z);
   }
 }
 
@@ -617,5 +616,263 @@ export function buildLocker(ctx: BuilderContext): ThreeNS.Group {
     for (let v = 0; v < 4; v++) box(ctx, group, dw * 0.5, 0.012, 0.01, dark, x, h * (0.85 - v * 0.025), d * 0.48);
     box(ctx, group, 0.025, 0.08, 0.025, steel, x + dw * 0.32, h * 0.55, d * 0.485);
   }
+  return group;
+}
+
+// ---------------------------------------------------------------------------
+// Food production: biscuit and chocolate lines
+
+const STAINLESS = 0xc9d1d6;
+const CHOCOLATE = 0x5a3220;
+const BISCUIT = 0xd9a45b;
+
+export function buildDoughMixer(ctx: BuilderContext): ThreeNS.Group {
+  const { THREE, item, baseColor } = ctx;
+  const group = new THREE.Group();
+  const { width: w, depth: d, height: h } = item;
+  const steel = surfaceMaterial(ctx, baseColor, 'brushedMetal');
+  const dark = surfaceMaterial(ctx, MACHINE_DARK, 'painted');
+  // Base with the bowl on the left, the column and head on the right.
+  box(ctx, group, w, h * 0.12, d, dark, 0, h * 0.06, 0);
+  const bowlR = Math.min(w * 0.3, d * 0.42);
+  const bowlX = -w / 2 + bowlR + 0.05;
+  cylinder(ctx, group, bowlR, h * 0.4, steel, bowlX, h * 0.12 + h * 0.2, 0, 'y', 28, bowlR * 0.85);
+  cylinder(ctx, group, bowlR * 0.9, 0.02, surfaceMaterial(ctx, 0xf1e3c6, 'painted'), bowlX, h * 0.5, 0, 'y', 28);
+  const colW = w * 0.3;
+  const colX = w / 2 - colW / 2;
+  box(ctx, group, colW, h * 0.88, d * 0.7, steel, colX, h * 0.12 + h * 0.44, 0);
+  // Head over the bowl with the spiral hook.
+  box(ctx, group, w * 0.75, h * 0.16, d * 0.55, steel, w / 2 - w * 0.375, h * 0.88, 0);
+  cylinder(ctx, group, 0.04, h * 0.34, dark, bowlX, h * 0.63, 0);
+  // Control panel on the column.
+  box(ctx, group, colW * 0.7, h * 0.14, 0.02, glow(ctx, 0x1e88e5, 0.4), colX, h * 0.62, d * 0.36);
+  cylinder(ctx, group, 0.03, 0.02, glow(ctx, 0xe53935, 0.6), colX, h * 0.5, d * 0.36, 'z');
+  return group;
+}
+
+export function buildSilo(ctx: BuilderContext): ThreeNS.Group {
+  const { THREE, item, baseColor } = ctx;
+  const group = new THREE.Group();
+  const { width: w, depth: d, height: h } = item;
+  const shell = surfaceMaterial(ctx, baseColor, 'brushedMetal');
+  const dark = surfaceMaterial(ctx, MACHINE_DARK, 'painted');
+  const r = Math.min(w, d) * 0.45;
+  const legH = h * 0.22;
+  const coneH = h * 0.18;
+  const bodyH = h - legH - coneH - h * 0.04;
+  for (let i = 0; i < 4; i++) {
+    const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
+    box(ctx, group, 0.08, legH + coneH * 0.5, 0.08, dark, Math.cos(a) * r * 0.85, (legH + coneH * 0.5) / 2, Math.sin(a) * r * 0.85);
+  }
+  // Discharge cone, cylinder and a shallow lid.
+  cylinder(ctx, group, r, coneH, shell, 0, legH + coneH / 2, 0, 'y', 28, r * 0.15);
+  cylinder(ctx, group, r, bodyH, shell, 0, legH + coneH + bodyH / 2, 0, 'y', 28);
+  cylinder(ctx, group, r * 0.2, h * 0.04, shell, 0, h - h * 0.02, 0, 'y', 28, r);
+  cylinder(ctx, group, 0.08, legH * 0.7, dark, 0, legH * 0.4, 0);
+  // Ladder up the front.
+  for (const side of [-1, 1]) box(ctx, group, 0.03, bodyH, 0.03, dark, side * 0.18, legH + coneH + bodyH / 2, r + 0.04);
+  for (let i = 0; i < 8; i++) box(ctx, group, 0.36, 0.025, 0.025, dark, 0, legH + coneH + (bodyH * (i + 0.5)) / 8, r + 0.04);
+  return group;
+}
+
+export function buildRotaryMoulder(ctx: BuilderContext): ThreeNS.Group {
+  const { THREE, item, baseColor } = ctx;
+  const group = new THREE.Group();
+  const { width: w, depth: d, height: h } = item;
+  const steel = surfaceMaterial(ctx, baseColor, 'brushedMetal');
+  const dark = surfaceMaterial(ctx, MACHINE_DARK, 'painted');
+  const belt = surfaceMaterial(ctx, 0xe8e2d4, 'fabric');
+  // Frame and the outgoing belt along x.
+  box(ctx, group, w, h * 0.5, d * 0.8, steel, 0, h * 0.25, 0);
+  box(ctx, group, w, 0.03, d * 0.7, belt, 0, h * 0.52, 0);
+  // Hopper and the moulding rollers on the left half.
+  box(ctx, group, w * 0.45, h * 0.25, d * 0.85, steel, -w * 0.22, h * 0.66, 0);
+  cylinder(ctx, group, w * 0.2, h * 0.2, steel, -w * 0.22, h * 0.88, 0, 'y', 4, w * 0.12);
+  for (const dx of [-0.32, -0.12]) cylinder(ctx, group, h * 0.09, d * 0.72, dark, dx * w, h * 0.62, 0, 'z', 20);
+  // Raw biscuits leaving on the belt.
+  for (let i = 0; i < 6; i++) {
+    for (const dz of [-0.2, 0, 0.2]) cylinder(ctx, group, 0.04, 0.012, surfaceMaterial(ctx, 0xf0d9a8, 'painted'), w * 0.1 + i * w * 0.07, h * 0.54, dz * d, 'y', 10);
+  }
+  box(ctx, group, w * 0.12, h * 0.18, 0.02, glow(ctx, 0x1e88e5, 0.4), w * 0.35, h * 0.34, d * 0.41);
+  return group;
+}
+
+export function buildTunnelOven(ctx: BuilderContext): ThreeNS.Group {
+  const { THREE, item, baseColor } = ctx;
+  const group = new THREE.Group();
+  const { width: w, depth: d, height: h } = item;
+  const shell = surfaceMaterial(ctx, baseColor, 'brushedMetal');
+  const dark = surfaceMaterial(ctx, MACHINE_DARK, 'painted');
+  const belt = surfaceMaterial(ctx, 0x6d6d6d, 'brushedMetal');
+  const beltY = h * 0.42;
+  // Legs.
+  const legs = Math.max(2, Math.round(w / 2) + 1);
+  for (let i = 0; i < legs; i++) {
+    const x = -w / 2 + 0.6 + (i * (w - 1.2)) / (legs - 1);
+    for (const side of [-1, 1]) box(ctx, group, 0.08, beltY, 0.08, dark, x, beltY / 2, side * d * 0.38);
+  }
+  // Steel band running through, out of each end.
+  box(ctx, group, w, 0.03, d * 0.7, belt, 0, beltY, 0);
+  // Insulated baking chamber in zones, with a gap between each.
+  const chamberL = w - 1.2;
+  const zones = Math.max(2, Math.round(chamberL / 2.5));
+  const zoneL = chamberL / zones;
+  for (let i = 0; i < zones; i++) {
+    const x = -chamberL / 2 + zoneL * (i + 0.5);
+    box(ctx, group, zoneL * 0.98, h * 0.5, d, shell, x, beltY + h * 0.25, 0);
+    // Burner panel with its flame window.
+    box(ctx, group, zoneL * 0.3, h * 0.12, 0.02, glow(ctx, 0xff7043, 0.9), x, beltY + h * 0.22, d / 2 + 0.005);
+    // Exhaust stack.
+    cylinder(ctx, group, Math.min(0.12, d * 0.08), h * 0.08, dark, x, h - h * 0.04, -d * 0.2);
+  }
+  // Baked biscuits at the outfeed end.
+  for (let i = 0; i < 4; i++) {
+    for (const dz of [-0.2, 0, 0.2]) cylinder(ctx, group, 0.045, 0.014, surfaceMaterial(ctx, BISCUIT, 'painted'), w / 2 - 0.15 - i * 0.12, beltY + 0.02, dz * d, 'y', 10);
+  }
+  // Control cabinet at the infeed end.
+  box(ctx, group, 0.5, h * 0.4, 0.3, dark, -w / 2 + 0.3, beltY + h * 0.2 + 0.02, -d * 0.35);
+  return group;
+}
+
+export function buildCoolingTunnel(ctx: BuilderContext): ThreeNS.Group {
+  const { THREE, item, baseColor } = ctx;
+  const group = new THREE.Group();
+  const { width: w, depth: d, height: h } = item;
+  const hood = surfaceMaterial(ctx, baseColor, 'painted');
+  const steel = surfaceMaterial(ctx, STAINLESS, 'brushedMetal');
+  const belt = surfaceMaterial(ctx, 0xeeeeee, 'plastic');
+  const beltY = h * 0.6;
+  const legs = Math.max(2, Math.round(w / 1.8) + 1);
+  for (let i = 0; i < legs; i++) {
+    const x = -w / 2 + 0.1 + (i * (w - 0.2)) / (legs - 1);
+    for (const side of [-1, 1]) box(ctx, group, 0.06, beltY, 0.06, steel, x, beltY / 2, side * d * 0.4);
+  }
+  box(ctx, group, w, 0.04, d * 0.8, belt, 0, beltY, 0);
+  // Hood in sections, each with a window in front.
+  const sections = Math.max(1, Math.round(w / 2));
+  const secL = (w - 0.6) / sections;
+  for (let i = 0; i < sections; i++) {
+    const x = -w / 2 + 0.3 + secL * (i + 0.5);
+    box(ctx, group, secL * 0.97, h * 0.35, d * 0.9, hood, x, beltY + h * 0.2, 0);
+    pane(ctx, group, secL * 0.6, h * 0.15, 0.02, x, beltY + h * 0.18, d * 0.455);
+  }
+  // Coated pieces visible at both ends.
+  const piece = surfaceMaterial(ctx, CHOCOLATE, 'painted');
+  for (const end of [-1, 1]) {
+    for (const dz of [-0.2, 0, 0.2]) box(ctx, group, 0.1, 0.03, 0.06, piece, end * (w / 2 - 0.15), beltY + 0.035, dz * d);
+  }
+  return group;
+}
+
+export function buildConche(ctx: BuilderContext): ThreeNS.Group {
+  const { THREE, item, baseColor } = ctx;
+  const group = new THREE.Group();
+  const { width: w, depth: d, height: h } = item;
+  const steel = surfaceMaterial(ctx, baseColor, 'brushedMetal');
+  const dark = surfaceMaterial(ctx, MACHINE_DARK, 'painted');
+  // Plinth, a round-ended trough and its lid.
+  box(ctx, group, w * 0.9, h * 0.15, d * 0.8, dark, 0, h * 0.075, 0);
+  const r = Math.min(d * 0.45, h * 0.35);
+  const trough = mesh(THREE, new THREE.CapsuleGeometry(r, Math.max(0.01, w * 0.85 - r * 2), 8, 20), steel);
+  trough.rotation.z = Math.PI / 2;
+  trough.position.set(0, h * 0.15 + r, 0);
+  group.add(trough);
+  box(ctx, group, w * 0.7, 0.04, d * 0.5, steel, 0, h * 0.15 + r * 2 + 0.02, 0);
+  // Drive motor and gearbox on top.
+  box(ctx, group, w * 0.3, h - (h * 0.15 + r * 2 + 0.04), d * 0.4, dark, w * 0.2, (h + h * 0.15 + r * 2 + 0.04) / 2, 0);
+  const lidTop = h * 0.15 + r * 2 + 0.04;
+  const motorR = Math.max(0.02, Math.min(d * 0.12, (h - lidTop) / 2));
+  cylinder(ctx, group, motorR, w * 0.25, surfaceMaterial(ctx, 0x2e7d32, 'painted'), -w * 0.12, lidTop + motorR, 0, 'x', 16);
+  // Outlet valve and the panel.
+  cylinder(ctx, group, 0.05, Math.min(0.2, d / 2 - r), dark, -w * 0.3, h * 0.2, r + Math.min(0.1, (d / 2 - r) / 2), 'z');
+  box(ctx, group, w * 0.15, h * 0.15, 0.02, glow(ctx, 0x1e88e5, 0.4), w * 0.3, h * 0.3, d * 0.41);
+  return group;
+}
+
+export function buildTemperingMachine(ctx: BuilderContext): ThreeNS.Group {
+  const { THREE, item, baseColor } = ctx;
+  const group = new THREE.Group();
+  const { width: w, depth: d, height: h } = item;
+  const steel = surfaceMaterial(ctx, baseColor, 'brushedMetal');
+  const dark = surfaceMaterial(ctx, MACHINE_DARK, 'painted');
+  const choc = material(THREE, CHOCOLATE, ctx.hasCollision, ctx.opacity, { roughness: 0.25 });
+  // Cabinet with the tempering column on top.
+  box(ctx, group, w, h * 0.55, d, steel, 0, h * 0.275, 0);
+  cylinder(ctx, group, Math.min(w, d) * 0.22, h * 0.4, steel, -w * 0.2, h * 0.55 + h * 0.2, -d * 0.1, 'y', 20);
+  // Open chocolate bath with a spout.
+  box(ctx, group, w * 0.5, h * 0.06, d * 0.6, steel, w * 0.2, h * 0.58, 0);
+  box(ctx, group, w * 0.44, 0.01, d * 0.52, choc, w * 0.2, h * 0.615, 0);
+  cylinder(ctx, group, 0.03, h * 0.15, steel, w * 0.2, h * 0.75, d * 0.2);
+  // Touch screen.
+  box(ctx, group, w * 0.3, h * 0.12, 0.02, glow(ctx, 0x1e88e5, 0.4), -w * 0.2, h * 0.4, d / 2 + 0.005);
+  box(ctx, group, w * 0.9, 0.03, d * 0.9, dark, 0, 0.015, 0);
+  return group;
+}
+
+export function buildEnrober(ctx: BuilderContext): ThreeNS.Group {
+  const { THREE, item, baseColor } = ctx;
+  const group = new THREE.Group();
+  const { width: w, depth: d, height: h } = item;
+  const steel = surfaceMaterial(ctx, baseColor, 'brushedMetal');
+  const wire = surfaceMaterial(ctx, 0x9e9e9e, 'brushedMetal');
+  const choc = material(THREE, CHOCOLATE, ctx.hasCollision, ctx.opacity, { roughness: 0.2 });
+  const beltY = h * 0.5;
+  // Body below the wire belt.
+  box(ctx, group, w * 0.8, beltY - 0.02, d * 0.85, steel, 0, (beltY - 0.02) / 2, 0);
+  box(ctx, group, w, 0.02, d * 0.7, wire, 0, beltY, 0);
+  // Chocolate curtain falling from the trough above the belt.
+  box(ctx, group, w * 0.3, h * 0.18, d * 0.8, steel, 0, h - h * 0.09, 0);
+  box(ctx, group, w * 0.04, h - h * 0.18 - beltY, d * 0.66, choc, 0, beltY + (h - h * 0.18 - beltY) / 2, 0);
+  for (const side of [-1, 1]) box(ctx, group, 0.05, h - beltY, 0.05, steel, side * w * 0.17, beltY + (h - beltY) / 2, d * 0.42);
+  // Pieces: plain on the way in, coated on the way out.
+  const plain = surfaceMaterial(ctx, BISCUIT, 'painted');
+  for (let i = 0; i < 4; i++) {
+    for (const dz of [-0.2, 0, 0.2]) {
+      box(ctx, group, 0.1, 0.025, 0.06, plain, -w * 0.42 + i * w * 0.07, beltY + 0.025, dz * d);
+      box(ctx, group, 0.1, 0.035, 0.06, choc, w * 0.2 + i * w * 0.07, beltY + 0.03, dz * d);
+    }
+  }
+  return group;
+}
+
+export function buildFlowWrapper(ctx: BuilderContext): ThreeNS.Group {
+  const { THREE, item, baseColor } = ctx;
+  const group = new THREE.Group();
+  const { width: w, depth: d, height: h } = item;
+  const steel = surfaceMaterial(ctx, STAINLESS, 'brushedMetal');
+  const body = surfaceMaterial(ctx, baseColor, 'painted');
+  const beltY = h * 0.55;
+  // Infeed chain on the left, the sealing unit and outfeed belt on the right.
+  box(ctx, group, w * 0.5, 0.04, d * 0.4, steel, -w * 0.25, beltY, -d * 0.1);
+  for (const side of [-1, 1]) box(ctx, group, 0.05, beltY, 0.05, steel, -w * 0.25 + side * w * 0.2, beltY / 2, -d * 0.1);
+  box(ctx, group, w * 0.35, h * 0.85, d * 0.9, body, w * 0.15, h * 0.425, 0);
+  pane(ctx, group, w * 0.25, h * 0.25, 0.02, w * 0.15, h * 0.6, d * 0.455);
+  box(ctx, group, w * 0.17, 0.04, d * 0.4, steel, w * 0.415, beltY, -d * 0.1);
+  // Film reel on the back and the wrapped packs.
+  const reelR = Math.min(h * 0.15, d * 0.25);
+  cylinder(ctx, group, reelR, d * 0.2, surfaceMaterial(ctx, 0xc62828, 'plastic'), w * 0.15, h - reelR, -d * 0.35, 'z', 20);
+  const pack = surfaceMaterial(ctx, 0xc62828, 'plastic');
+  for (let i = 0; i < 3; i++) box(ctx, group, 0.18, 0.05, 0.08, pack, w * 0.36 + i * 0.07, beltY + 0.045, -d * 0.1);
+  for (let i = 0; i < 4; i++) box(ctx, group, 0.1, 0.025, 0.06, surfaceMaterial(ctx, CHOCOLATE, 'painted'), -w * 0.45 + i * w * 0.1, beltY + 0.035, -d * 0.1);
+  // Operator panel on an arm.
+  box(ctx, group, w * 0.12, h * 0.15, 0.04, body, -w * 0.05, h * 0.8, d * 0.4);
+  box(ctx, group, w * 0.1, h * 0.12, 0.01, glow(ctx, 0x1e88e5, 0.5), -w * 0.05, h * 0.8, d * 0.425);
+  return group;
+}
+
+export function buildStainlessTable(ctx: BuilderContext): ThreeNS.Group {
+  const { THREE, item, baseColor } = ctx;
+  const group = new THREE.Group();
+  const { width: w, depth: d, height: h } = item;
+  const steel = surfaceMaterial(ctx, baseColor, 'brushedMetal');
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) box(ctx, group, 0.04, h - 0.09, 0.04, steel, sx * (w / 2 - 0.05), (h - 0.09) / 2, sz * (d / 2 - 0.05));
+  // The top sits a tray's depth below the catalog height, so the trays stay inside it.
+  const topY = h - 0.05;
+  box(ctx, group, w, 0.04, d, steel, 0, topY - 0.02, 0);
+  box(ctx, group, w - 0.08, 0.02, d - 0.08, steel, 0, h * 0.2, 0);
+  // Trays of product on top.
+  const piece = surfaceMaterial(ctx, BISCUIT, 'painted');
+  for (const dx of [-0.25, 0.15]) box(ctx, group, w * 0.3, 0.03, d * 0.6, steel, dx * w, topY + 0.015, 0);
+  for (let i = 0; i < 3; i++) for (const dz of [-0.15, 0.15]) cylinder(ctx, group, 0.04, 0.012, piece, -w * 0.33 + i * w * 0.08, topY + 0.036, dz * d, 'y', 10);
   return group;
 }

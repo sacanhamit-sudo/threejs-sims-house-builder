@@ -14,7 +14,7 @@ import { subscribeHouseReplaced } from '../lib/restore-point';
 // A Record, not a list, so a template added to ROOM_TEMPLATES without a label
 // here fails the typecheck instead of silently missing from the select (#343).
 export const TEMPLATE_LABELS: Readonly<Record<RoomTemplateKey, string>> = {
-  factory: '🏭 Three-Storey Factory',
+  factory: '🏭 Biscuit & Chocolate Factory',
   bedroom: '🛏️ Bedroom',
   livingRoom: '🛋️ Living Room',
   office: '💼 Home Office',

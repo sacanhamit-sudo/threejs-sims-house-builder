@@ -67,7 +67,7 @@ components/
     │   │   ├── i18n-root.tsx            Starts the DOM translator from the root layout
     │   │   ├── language-picker.tsx      TR / EN radios and the useLang() hook
     │   │   └── tr-dict.json             The Turkish dictionary
-    │   ├── constants.ts                 Catalog (94 items in 13 categories) with colour variants, templates, MAX_FLOORS
+    │   ├── constants.ts                 Catalog (105 items in 13 categories) with colour variants, templates, MAX_FLOORS
     │   ├── schema.ts                    Type guards, legacy migration, caps that repair (never refuse)
     │   ├── geometry.ts                  Collision (items, keep-out, partitions), bounds, snap, auto-organize
     │   ├── collision-reason.ts          The sentence for why an item shows red (rules live in geometry.ts)

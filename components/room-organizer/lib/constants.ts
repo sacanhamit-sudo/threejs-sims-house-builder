@@ -1,4 +1,4 @@
-import type { CatalogItem, CategoryMeta, FloorLayout, RoofSpec, RoofStyle, RoomLayout } from './types';
+import type { CatalogItem, CategoryMeta, FloorLayout, InteriorWall, RoofSpec, RoofStyle, RoomLayout, RoomZone } from './types';
 
 // Defined beside the error screens' light helpers (#584).
 export { STORAGE_KEY } from './saved-house';
@@ -241,6 +241,18 @@ export const FURNITURE_CATALOG = [
   { type: 'compressor', category: 'factory', name: 'Air Compressor', width: 1.6, depth: 0.8, height: 1.3, color: '#C0392B', icon: '💨', price: 5200 },
   { type: 'safety-barrier', category: 'factory', name: 'Safety Barrier', width: 2.0, depth: 0.15, height: 1.0, color: '#F5C518', icon: '🚧', price: 180 },
   { type: 'locker', category: 'factory', name: 'Staff Lockers', width: 1.2, depth: 0.5, height: 1.9, color: '#5C7A99', icon: '🔐', price: 600 },
+  // Food production: biscuit and chocolate
+  { type: 'silo', category: 'factory', name: 'Flour Silo', width: 2.0, depth: 2.0, height: 4.6, color: '#D3DADF', icon: '🌾', price: 18000 },
+  { type: 'dough-mixer', category: 'factory', name: 'Spiral Dough Mixer', width: 1.6, depth: 1.2, height: 1.8, color: '#C9D1D6', icon: '🥣', price: 24000 },
+  { type: 'rotary-moulder', category: 'factory', name: 'Rotary Biscuit Moulder', width: 2.4, depth: 1.6, height: 1.8, color: '#C9D1D6', icon: '🍪', price: 55000 },
+  { type: 'tunnel-oven', category: 'factory', name: 'Tunnel Oven', width: 10.0, depth: 1.8, height: 2.0, color: '#B8C2C8', icon: '🔥', price: 240000 },
+  { type: 'cooling-tunnel', category: 'factory', name: 'Cooling Tunnel', width: 6.0, depth: 1.4, height: 1.5, color: '#E8EEF2', icon: '❄️', price: 60000 },
+  { type: 'conche', category: 'factory', name: 'Chocolate Conche', width: 2.4, depth: 1.8, height: 1.8, color: '#C9D1D6', icon: '🍫', price: 70000 },
+  { type: 'tempering-machine', category: 'factory', name: 'Chocolate Tempering Machine', width: 1.4, depth: 1.0, height: 1.8, color: '#C9D1D6', icon: '🌡️', price: 32000 },
+  { type: 'enrober', category: 'factory', name: 'Chocolate Enrober', width: 3.0, depth: 1.6, height: 1.8, color: '#C9D1D6', icon: '🍫', price: 85000 },
+  { type: 'flow-wrapper', category: 'factory', name: 'Flow-Pack Wrapping Machine', width: 4.0, depth: 1.2, height: 1.7, color: '#ECEFF1', icon: '📦', price: 65000 },
+  { type: 'stainless-table', category: 'factory', name: 'Stainless Worktable', width: 2.0, depth: 0.8, height: 0.9, color: '#C9D1D6', icon: '🧑‍🍳', price: 800 },
+  { type: 'storage-tank', category: 'factory', name: 'Chocolate Tank', width: 1.4, depth: 1.4, height: 2.4, color: '#C9D1D6', icon: '🛢️', price: 16000 },
 ] as const satisfies readonly CatalogItem[];
 
 export type RoomTemplateKey = 'bedroom' | 'livingRoom' | 'office' | 'kitchen' | 'bathroom' | 'studio' | 'twoStory' | 'factory';
@@ -317,71 +329,157 @@ function placed(
   return { ...item, id, position: { x, z }, rotation, ...extra };
 }
 
-const FACTORY_SIZE = { width: 18, depth: 12 };
+const FACTORY_SIZE = { width: 36, depth: 24 };
+const PARTITION = '#ECEFF1';
 
-/** A three-storey factory: production hall, assembly and storage, offices (factory fork). */
+/** Straight interior walls from [x1, z1, x2, z2] runs. */
+function partitions(prefix: string, runs: ReadonlyArray<readonly [number, number, number, number]>): InteriorWall[] {
+  return runs.map(([x1, z1, x2, z2], i) => ({ id: `${prefix}-${i + 1}`, x1, z1, x2, z2, color: PARTITION }));
+}
+
+function zone(id: string, name: string, color: string, x: number, z: number, w: number, d: number): RoomZone {
+  return { id, name, color, x, z, w, d };
+}
+
+/** A row of pallet racks, 4.5 m tall, at `z`, starting at `x0` and stepping `pitch` along x. */
+function rackRow(prefix: string, z: number, x0: number, count: number, pitch = 2.9): FloorLayout['items'] {
+  return Array.from({ length: count }, (_, i) => placed(`${prefix}-${i + 1}`, 'Pallet Rack', x0 + i * pitch, z, 0, { height: 4.5 }));
+}
+
+/** A desk with its computer and chair, the chair on the +z side. */
+function workstation(prefix: string, x: number, z: number): FloorLayout['items'] {
+  return [
+    placed(`${prefix}-desk`, 'Desk', x, z),
+    placed(`${prefix}-pc`, 'Computer', x, z),
+    placed(`${prefix}-chair`, 'Chair', x, z + 0.7, Math.PI),
+  ];
+}
+
+/**
+ * A biscuit and chocolate factory over three storeys (factory fork): storage
+ * and shipping on the ground floor, production in four sections above it,
+ * offices on top. 36 × 24 m, four times the first factory's footprint.
+ */
 const FACTORY_TEMPLATE: Omit<RoomLayout, 'id'> = {
-  name: 'Three-Storey Factory',
+  name: 'Biscuit & Chocolate Factory',
   width: FACTORY_SIZE.width,
   height: FACTORY_SIZE.depth,
   roof: { style: 'flat', color: '#546e7a' },
   floors: [
     {
       id: 'ground',
-      name: 'Production Hall',
+      name: 'Storage & Shipping',
       floorColor: '#9E9E9E',
       floorPattern: 'concrete',
       wallPattern: 'panel',
-      height: 4.5,
+      height: 5,
+      interiorWalls: partitions('gf-wall', [[4, -12, 4, -3], [4, 3, 4, 12]]),
+      zones: [
+        zone('gf-zone-store', 'Raw Material & Product Store', '#90CAF9', -18, -12, 22, 24),
+        zone('gf-zone-ship', 'Shipping', '#FFCC80', 4, -12, 14, 24),
+      ],
       items: [
-        placed('gf-cnc-1', 'CNC Machining Centre', -7.0, -4.0),
-        placed('gf-cnc-2', 'CNC Machining Centre', -4.3, -4.0, 0, { color: '#4F7CAC' }),
-        placed('gf-lathe', 'Lathe', 0.8, -4.6),
-        placed('gf-press', 'Hydraulic Press', 3.5, -4.3),
-        placed('gf-cabinet', 'Control Cabinet', 6.0, -5.6),
-        placed('gf-robot', 'Industrial Robot Arm', -4.2, 0.8),
-        placed('gf-barrier-1', 'Safety Barrier', -4.2, -0.45),
-        placed('gf-barrier-2', 'Safety Barrier', -4.2, 2.05),
-        placed('gf-conveyor-1', 'Belt Conveyor', -1.1, 0.8),
-        placed('gf-conveyor-2', 'Belt Conveyor', 3.0, 0.8),
-        placed('gf-molder', 'Injection Moulding Machine', -5.5, 4.6, Math.PI),
-        placed('gf-compressor', 'Air Compressor', -0.5, 5.4, Math.PI),
-        placed('gf-forklift', 'Forklift', 2.5, 3.8),
-        placed('gf-pallet-1', 'Loaded Pallet', 4.8, 5.3),
-        placed('gf-pallet-2', 'Loaded Pallet', 4.8, 3.9),
-        placed('gf-workbench', 'Workbench', 8.3, -1.5, -Math.PI / 2),
-        placed('gf-stairs', 'Stairs', 7.5, 3.5, 0, { depth: 3.6, height: 4.5 }),
-        placed('gf-door', 'Double Door', -1.6, -FACTORY_SIZE.depth / 2),
-        placed('gf-gate', 'Sliding Door', 2.5, FACTORY_SIZE.depth / 2, Math.PI),
-        templateOpening('gf-window-1', 'window', 'west', -1, FACTORY_SIZE),
-        templateOpening('gf-window-2', 'window', 'west', 1.5, FACTORY_SIZE),
-        templateOpening('gf-window-3', 'window', 'east', -4, FACTORY_SIZE),
+        ...rackRow('gf-rack-a', -10.6, -16.3, 6),
+        ...rackRow('gf-rack-b', -5.6, -16.3, 6),
+        ...rackRow('gf-rack-c', -0.6, -16.3, 6),
+        ...rackRow('gf-rack-d', 4.4, -16.3, 6),
+        placed('gf-forklift-1', 'Forklift', -9, 8.8),
+        placed('gf-pallet-w1', 'Loaded Pallet', -15.5, 9.5),
+        placed('gf-pallet-w2', 'Loaded Pallet', -14.0, 9.5),
+        placed('gf-pallet-w3', 'Loaded Pallet', -15.5, 10.8),
+        placed('gf-pallet-w4', 'Loaded Pallet', -14.0, 10.8),
+        ...[6.8, 8.2, 10.8, 12.2, 14.8, 16.2].flatMap((x, i) => [
+          placed(`gf-pallet-s${i}a`, 'Loaded Pallet', x, 8.6),
+          placed(`gf-pallet-s${i}b`, 'Loaded Pallet', x, 7.4),
+        ]),
+        placed('gf-forklift-2', 'Forklift', 9, 3.5),
+        placed('gf-forklift-3', 'Forklift', 14, 3.5),
+        placed('gf-desk', 'Desk', 13, -10.8),
+        placed('gf-pc', 'Computer', 13, -10.8),
+        placed('gf-chair', 'Chair', 13, -10.1, Math.PI),
+        placed('gf-lockers-1', 'Staff Lockers', 6.0, -11.5),
+        placed('gf-lockers-2', 'Staff Lockers', 7.3, -11.5),
+        placed('gf-cabinet', 'Control Cabinet', 17.7, 0, -Math.PI / 2),
+        placed('gf-stairs', 'Stairs', 16.8, -6, 0, { depth: 4.5, height: 5 }),
+        placed('gf-entrance', 'Double Door', 9, -FACTORY_SIZE.depth / 2),
+        ...[7.5, 11.5, 15.5].map((x, i) => placed(`gf-dock-${i + 1}`, 'Sliding Door', x, FACTORY_SIZE.depth / 2, Math.PI, { width: 3, height: 3.6 })),
+        templateOpening('gf-window-1', 'window', 'north', 15.5, FACTORY_SIZE),
+        templateOpening('gf-window-2', 'window', 'east', 4, FACTORY_SIZE),
+        templateOpening('gf-window-3', 'window', 'west', -3, FACTORY_SIZE),
+        templateOpening('gf-window-4', 'window', 'west', 3, FACTORY_SIZE),
       ],
     },
     {
       id: 'first',
-      name: 'Assembly & Storage',
-      floorColor: '#B0BEC5',
-      floorPattern: 'concrete',
-      height: 3.2,
+      name: 'Production',
+      floorColor: '#CFD8DC',
+      floorPattern: 'tile',
+      wallPattern: 'tile',
+      height: 5,
+      interiorWalls: partitions('ff-wall', [
+        [0, -12, 0, -7], [0, -4, 0, -1.5], [0, 1.5, 0, 4], [0, 7, 0, 12],
+        [-18, 0, -10, 0], [-7, 0, -1.5, 0], [1.5, 0, 7, 0], [10, 0, 18, 0],
+      ]),
+      zones: [
+        zone('ff-zone-1', 'Section 1 · Dough Preparation', '#FFE082', -18, -12, 18, 12),
+        zone('ff-zone-2', 'Section 2 · Biscuit Line', '#FFAB91', 0, -12, 18, 12),
+        zone('ff-zone-3', 'Section 3 · Chocolate', '#BCAAA4', -18, 0, 18, 12),
+        zone('ff-zone-4', 'Section 4 · Packaging', '#A5D6A7', 0, 0, 18, 12),
+      ],
       items: [
-        placed('ff-rack-1', 'Pallet Rack', -6.5, 5.35, Math.PI),
-        placed('ff-rack-2', 'Pallet Rack', -3.5, 5.35, Math.PI),
-        placed('ff-rack-3', 'Pallet Rack', -0.5, 5.35, Math.PI),
-        placed('ff-shelf-1', 'Metal Shelving', -8.6, -2.0, Math.PI / 2),
-        placed('ff-shelf-2', 'Metal Shelving', -8.6, 0.5, Math.PI / 2),
-        placed('ff-bench-1', 'Workbench', -4.0, -1.0),
-        placed('ff-bench-2', 'Workbench', -1.0, -1.0),
-        placed('ff-bench-3', 'Workbench', 2.0, -1.0),
-        placed('ff-conveyor', 'Belt Conveyor', -1.0, 2.2),
-        placed('ff-pallet-1', 'Loaded Pallet', 3.6, 3.4),
-        placed('ff-pallet-2', 'Loaded Pallet', 5.0, 3.4),
-        placed('ff-lockers', 'Staff Lockers', 4.5, -5.5),
-        placed('ff-stairs', 'Stairs', 7.5, -3.0, 0, { depth: 3.6, height: 3.2 }),
-        templateOpening('ff-window-1', 'window', 'north', -5, FACTORY_SIZE),
-        templateOpening('ff-window-2', 'window', 'north', -2, FACTORY_SIZE),
-        templateOpening('ff-window-3', 'window', 'north', 2.5, FACTORY_SIZE),
-        templateOpening('ff-window-4', 'window', 'west', 3.5, FACTORY_SIZE),
+        // Section 1: dough preparation
+        placed('ff-silo-1', 'Flour Silo', -16.5, -10.5),
+        placed('ff-silo-2', 'Flour Silo', -14.0, -10.5),
+        placed('ff-mixer-1', 'Spiral Dough Mixer', -11.0, -10.8),
+        placed('ff-mixer-2', 'Spiral Dough Mixer', -8.6, -10.8),
+        placed('ff-syrup-tank', 'Storage Tank', -5.5, -10.6),
+        placed('ff-table-1', 'Stainless Worktable', -14.0, -5.5),
+        placed('ff-table-2', 'Stainless Worktable', -10.5, -5.5),
+        placed('ff-shelf', 'Metal Shelving', -1.0, -9.5, Math.PI / 2),
+        placed('ff-pallet-1', 'Loaded Pallet', -6.5, -5.5),
+        placed('ff-pallet-2', 'Loaded Pallet', -5.1, -5.5),
+        // Section 2: biscuit line, moulder → oven → cooling, then back west
+        placed('ff-moulder', 'Rotary Biscuit Moulder', 2.0, -10.0),
+        placed('ff-oven', 'Tunnel Oven', 8.4, -10.0),
+        placed('ff-conveyor-1', 'Belt Conveyor', 14.7, -10.0, 0, { width: 2.4 }),
+        placed('ff-conveyor-2', 'Belt Conveyor', 15.0, -7.4, Math.PI / 2, { width: 3 }),
+        placed('ff-conveyor-3', 'Belt Conveyor', 14.4, -4.8, Math.PI, { width: 2.4 }),
+        placed('ff-cooling-1', 'Cooling Tunnel', 10.0, -4.8, Math.PI),
+        placed('ff-table-3', 'Stainless Worktable', 4.5, -4.8),
+        placed('ff-cabinet-1', 'Control Cabinet', 4.5, -1.0, Math.PI),
+        placed('ff-pallet-3', 'Loaded Pallet', 11.5, -1.8),
+        placed('ff-pallet-4', 'Loaded Pallet', 13.0, -1.8),
+        // Section 3: chocolate, conching → tempering → enrobing → cooling
+        placed('ff-conche-1', 'Chocolate Conche', -15.5, 10.5, Math.PI),
+        placed('ff-conche-2', 'Chocolate Conche', -12.4, 10.5, Math.PI),
+        placed('ff-temper-1', 'Chocolate Tempering Machine', -9.5, 10.9, Math.PI),
+        placed('ff-temper-2', 'Chocolate Tempering Machine', -7.6, 10.9, Math.PI),
+        placed('ff-choc-tank-1', 'Chocolate Tank', -16.8, 2.2),
+        placed('ff-choc-tank-2', 'Chocolate Tank', -14.9, 2.2),
+        placed('ff-enrober', 'Chocolate Enrober', -9.5, 5.5),
+        placed('ff-cooling-2', 'Cooling Tunnel', -4.6, 5.5),
+        placed('ff-table-4', 'Stainless Worktable', -4.0, 10.8, Math.PI),
+        placed('ff-conveyor-4', 'Belt Conveyor', 0, 5.5, 0, { width: 3 }),
+        // Section 4: packaging and palletising
+        placed('ff-wrapper-1', 'Flow-Pack Wrapping Machine', 3.7, 5.5),
+        placed('ff-conveyor-5', 'Belt Conveyor', 7.0, 5.5, 0, { width: 2.4 }),
+        placed('ff-robot', 'Industrial Robot Arm', 9.2, 7.0),
+        placed('ff-barrier', 'Safety Barrier', 10.2, 7.0, Math.PI / 2),
+        placed('ff-pallet-5', 'Loaded Pallet', 11.0, 7.0),
+        placed('ff-pallet-6', 'Loaded Pallet', 9.2, 8.8),
+        placed('ff-wrapper-2', 'Flow-Pack Wrapping Machine', 12.6, 2.0),
+        placed('ff-cabinet-2', 'Control Cabinet', 11.5, 0.6),
+        placed('ff-pack-1', 'Stainless Worktable', 3.0, 10.8, Math.PI),
+        placed('ff-pack-2', 'Stainless Worktable', 6.0, 10.8, Math.PI),
+        placed('ff-pack-3', 'Stainless Worktable', 9.0, 10.8, Math.PI),
+        placed('ff-pallet-7', 'Loaded Pallet', 13.0, 10.8),
+        placed('ff-pallet-8', 'Loaded Pallet', 14.4, 10.8),
+        placed('ff-stairs', 'Stairs', 16.8, 4.8, 0, { depth: 4.5, height: 5 }),
+        ...[-15, -9, -3, 3, 9, 15].map((x, i) => templateOpening(`ff-window-n${i + 1}`, 'window', 'north', x, FACTORY_SIZE)),
+        ...[-15, -9, 3, 9].map((x, i) => templateOpening(`ff-window-s${i + 1}`, 'window', 'south', x, FACTORY_SIZE)),
+        templateOpening('ff-window-e1', 'window', 'east', -10, FACTORY_SIZE),
+        templateOpening('ff-window-w1', 'window', 'west', -6, FACTORY_SIZE),
+        templateOpening('ff-window-w2', 'window', 'west', 6, FACTORY_SIZE),
       ],
     },
     {
@@ -391,31 +489,55 @@ const FACTORY_TEMPLATE: Omit<RoomLayout, 'id'> = {
       floorPattern: 'carpet',
       wallPattern: 'plaster',
       height: 3.2,
+      interiorWalls: partitions('sf-wall', [
+        [-18, 4, -11, 4], [-9, 4, -6, 4], [-6, 4, -6, 12],
+        [12, -12, 12, -6], [12, -6, 14, -6], [16, -6, 18, -6],
+      ]),
+      zones: [
+        zone('sf-zone-open', 'Open Office', '#B3E5FC', -18, -12, 30, 16),
+        zone('sf-zone-meeting', 'Meeting Room', '#D1C4E9', -18, 4, 12, 8),
+        zone('sf-zone-manager', 'Manager’s Office', '#FFE0B2', 12, -12, 6, 6),
+        zone('sf-zone-lounge', 'Break Room', '#C8E6C9', -6, 4, 21, 8),
+      ],
       items: [
-        placed('sf-desk-1', 'Desk', -6.0, -3.0),
-        placed('sf-pc-1', 'Computer', -6.0, -3.0),
-        placed('sf-chair-1', 'Chair', -6.0, -2.3, Math.PI),
-        placed('sf-desk-2', 'Desk', -3.0, -3.0),
-        placed('sf-pc-2', 'Computer', -3.0, -3.0),
-        placed('sf-chair-2', 'Chair', -3.0, -2.3, Math.PI),
-        placed('sf-desk-3', 'Desk', 0.0, -3.0),
-        placed('sf-pc-3', 'Computer', 0.0, -3.0),
-        placed('sf-chair-3', 'Chair', 0.0, -2.3, Math.PI),
-        placed('sf-meeting', 'Dining Table', -3.0, 3.0),
-        placed('sf-mchair-1', 'Dining Chair', -3.5, 2.2, Math.PI),
-        placed('sf-mchair-2', 'Dining Chair', -2.5, 2.2, Math.PI),
-        placed('sf-mchair-3', 'Dining Chair', -3.5, 3.8),
-        placed('sf-mchair-4', 'Dining Chair', -2.5, 3.8),
-        placed('sf-shelf', 'Bookshelf', 3.0, -5.6),
-        placed('sf-plant-1', 'House Plant', -8.3, -5.3),
-        placed('sf-plant-2', 'House Plant', 1.5, 5.3),
-        placed('sf-sofa', 'Sofa', 4.0, 4.9, Math.PI),
-        placed('sf-coffee', 'Coffee Table', 4.0, 3.6),
-        templateOpening('sf-window-1', 'window', 'north', -6, FACTORY_SIZE),
-        templateOpening('sf-window-2', 'window', 'north', -3, FACTORY_SIZE),
-        templateOpening('sf-window-3', 'window', 'north', 2, FACTORY_SIZE),
-        templateOpening('sf-window-4', 'window', 'south', -6, FACTORY_SIZE),
-        templateOpening('sf-window-5', 'window', 'south', 0, FACTORY_SIZE),
+        ...[-15, -12, -9, -6, -3].flatMap((x, i) => [
+          ...workstation(`sf-ws-a${i + 1}`, x, -9),
+          ...workstation(`sf-ws-b${i + 1}`, x, -4),
+        ]),
+        placed('sf-lockers-1', 'Staff Lockers', 2.0, -11.5),
+        placed('sf-lockers-2', 'Staff Lockers', 3.3, -11.5),
+        placed('sf-plant-1', 'House Plant', -17.4, -11.4),
+        placed('sf-plant-2', 'House Plant', 0.5, 0.5),
+        // Meeting room
+        placed('sf-meet-1', 'Dining Table', -13.0, 8.0),
+        placed('sf-meet-2', 'Dining Table', -11.0, 8.0),
+        ...[-13.5, -12.5, -11.5, -10.5].flatMap((x, i) => [
+          placed(`sf-mchair-n${i + 1}`, 'Dining Chair', x, 7.1),
+          placed(`sf-mchair-s${i + 1}`, 'Dining Chair', x, 8.9, Math.PI),
+        ]),
+        placed('sf-meet-tv', 'TV Stand', -12.0, 11.5, Math.PI),
+        // Manager's office
+        placed('sf-mgr-desk', 'Desk', 15.0, -10.0),
+        placed('sf-mgr-pc', 'Computer', 15.0, -10.0),
+        placed('sf-mgr-chair', 'Chair', 15.0, -9.3, Math.PI),
+        placed('sf-mgr-shelf', 'Bookshelf', 17.6, -9.0, -Math.PI / 2),
+        placed('sf-mgr-armchair', 'Armchair', 13.3, -7.2),
+        placed('sf-mgr-plant', 'House Plant', 13.0, -11.4),
+        // Break room and kitchenette
+        placed('sf-sofa', 'Sofa', 8.0, 10.9, Math.PI),
+        placed('sf-coffee', 'Coffee Table', 8.0, 9.6),
+        placed('sf-counter', 'Counter', 12.5, 11.5, Math.PI),
+        placed('sf-sink', 'Kitchen Sink', 13.6, 11.5, Math.PI),
+        placed('sf-fridge', 'Refrigerator', 14.5, 11.45, Math.PI),
+        placed('sf-lunch', 'Dining Table', 12.0, 8.0),
+        placed('sf-lunch-chair-1', 'Dining Chair', 11.5, 7.1),
+        placed('sf-lunch-chair-2', 'Dining Chair', 12.5, 8.9, Math.PI),
+        ...[-15, -12, -9, -6, -3, 3, 6, 9, 15].map((x, i) => templateOpening(`sf-window-n${i + 1}`, 'window', 'north', x, FACTORY_SIZE)),
+        ...[-15, -12, 3, 6, 9].map((x, i) => templateOpening(`sf-window-s${i + 1}`, 'window', 'south', x, FACTORY_SIZE)),
+        templateOpening('sf-window-w1', 'window', 'west', -9, FACTORY_SIZE),
+        templateOpening('sf-window-w2', 'window', 'west', -4, FACTORY_SIZE),
+        templateOpening('sf-window-e1', 'window', 'east', -9, FACTORY_SIZE),
+        templateOpening('sf-window-e2', 'window', 'east', 9, FACTORY_SIZE),
       ],
     },
   ],

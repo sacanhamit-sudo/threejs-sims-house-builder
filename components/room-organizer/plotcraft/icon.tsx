@@ -786,6 +786,9 @@ const TYPE_TO_ICON: Record<string, PlotcraftIconName> = {
   conveyor: 'conveyor', pallet: 'box', 'pallet-rack': 'bookshelf', 'industrial-shelf': 'bookshelf',
   forklift: 'forklift', workbench: 'desk', 'robot-arm': 'build', 'control-cabinet': 'cabinet',
   'storage-tank': 'washer', compressor: 'fireplace', 'safety-barrier': 'fence', locker: 'wardrobe',
+  silo: 'washer', 'dough-mixer': 'microwave', 'rotary-moulder': 'factory', 'tunnel-oven': 'fireplace',
+  'cooling-tunnel': 'conveyor', conche: 'factory', 'tempering-machine': 'microwave', enrober: 'conveyor',
+  'flow-wrapper': 'conveyor', 'stainless-table': 'table',
 };
 
 const CATEGORY_TO_ICON: Record<string, PlotcraftIconName> = {

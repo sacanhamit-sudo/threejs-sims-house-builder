@@ -597,9 +597,10 @@ function drawZoneLabels(
     const area = showArea ? formatArea(zoneArea(zone, recess), unit) : null;
     ctx.font = 'bold 12px Arial';
     // A name wider than its zone would spill over the neighbouring rooms.
-    if (ctx.measureText(zone.name).width > w - 4) continue;
-    ctx.strokeText(zone.name, cx, y + 11);
-    ctx.fillText(zone.name, cx, y + 11);
+    const zoneName = translate(zone.name);
+    if (ctx.measureText(zoneName).width > w - 4) continue;
+    ctx.strokeText(zoneName, cx, y + 11);
+    ctx.fillText(zoneName, cx, y + 11);
     let lineY = y + 25;
     if (area) {
       ctx.font = '10px Arial';

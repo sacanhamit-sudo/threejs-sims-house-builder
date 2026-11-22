@@ -10,13 +10,17 @@
 >   `components/room-organizer/lib/i18n/tr-dict.json` dosyasındadır: anahtar
 >   İngilizce metnin kendisi, değer Türkçesidir. Yeni bir metni çevirmek için
 >   bu dosyaya bir satır eklemek yeterli.
-> - **Fabrika kategorisi** (16 ekipman): CNC işleme merkezi, torna, hidrolik
->   pres, plastik enjeksiyon makinesi, bantlı konveyör, yüklü palet, palet
->   rafı, metal raf, forklift, çalışma tezgâhı, endüstriyel robot kol, kumanda
->   panosu, depolama tankı, hava kompresörü, güvenlik bariyeri, personel
->   dolapları.
-> - **Üç Katlı Fabrika şablonu**: zeminde üretim holü (4,5 m kat yüksekliği),
->   1. katta montaj ve depo, 2. katta ofisler; katlar merdivenle bağlı.
+> - **Fabrika kategorisi** (27 ekipman): genel makineler (CNC, torna, pres,
+>   enjeksiyon, konveyör, palet, palet rafı, forklift, robot kol, pano, tank,
+>   kompresör, bariyer, dolap) ve **bisküvi/çikolata üretimi** için un silosu,
+>   spiral hamur yoğurma makinesi, rotary bisküvi kalıplama makinesi, tünel
+>   fırın, soğutma tüneli, çikolata konş, temperleme ve kaplama makineleri,
+>   çikolata tankı, flow-pack paketleme makinesi, paslanmaz çalışma masası.
+> - **Bisküvi ve Çikolata Fabrikası şablonu** (36 × 24 m, üç kat):
+>   zemin katta depolama ve sevkiyat (palet rafları, 3 yükleme kapısı,
+>   forkliftler), 1. katta 4 bölümlü üretim (hamur hazırlama, bisküvi hattı,
+>   çikolata, paketleme), en üst katta ofisler (açık ofis, toplantı odası,
+>   müdür odası, dinlenme alanı).
 
 [![Live Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://sacanhamit-sudo.github.io/threejs-sims-house-builder/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -43,7 +47,7 @@ link.
   roof with dormers.
 - **Walls and openings**: exterior and drawn interior walls, doors and windows
   that cut through them, per-wall paint and procedural floor and wall patterns.
-- **94 furniture items** in 13 categories, ready-made and your own furniture
+- **105 furniture items** in 13 categories, ready-made and your own furniture
   sets, themes, room templates and a budget you can make strict.
 - **Editing in 3D and on the 2D plan**: drag with snapping, multi-select,
   groups, align and distribute, copy and paste, locks, and undo/redo for

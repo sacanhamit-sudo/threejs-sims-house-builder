@@ -14,7 +14,7 @@ describe('translate (Turkish)', () => {
 
   it('translates through a leading emoji', () => {
     expect(translate('🔍 Fit to room', 'tr')).toBe('🔍 Odaya sığdır');
-    expect(translate('🏭 Three-Storey Factory', 'tr')).toBe('🏭 Üç Katlı Fabrika');
+    expect(translate('🏭 Biscuit & Chocolate Factory', 'tr')).toBe('🏭 Bisküvi ve Çikolata Fabrikası');
   });
 
   it('fills templates, translating what goes in them', () => {
