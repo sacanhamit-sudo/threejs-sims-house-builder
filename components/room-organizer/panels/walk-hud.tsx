@@ -65,17 +65,28 @@ function DesktopWalkHud({ locked, lockRefused, seatName, lamp = null, seated, fl
       >
         <HintChip>
           <Icon name="live" size={14} />
-          {lockRefused ? (
-            <span>Click again to look around</span>
-          ) : !locked ? (
+          {!locked ? (
+            // Free mouse (factory fork): a click walks there, a drag looks.
             <>
-              <Hint label="to look around">Click</Hint>
+              <Hint label="walk there">Click</Hint>
               <Dot />
-              <Hint label="again to exit">Esc</Hint>
+              <Hint label="look around">Drag</Hint>
+              <Dot />
+              <Hint label="walk">WASD</Hint>
+              {!lockRefused && (
+                <>
+                  <Dot />
+                  <Hint label="mouse-look">Double-click</Hint>
+                </>
+              )}
+              <Dot />
+              <Hint label="exit">Esc</Hint>
             </>
           ) : (
             <>
               <Hint label="walk">WASD</Hint>
+              <Dot />
+              <Hint label="walk to the crosshair">Click</Hint>
               <Dot />
               <Hint label="sprint">Shift</Hint>
               {multiFloor && (

@@ -808,7 +808,7 @@
  "Finish calibrating the floor plan": "Kat planı kalibrasyonunu bitir",
  "{} two points a known distance apart ({} of 2)": "Aralarındaki mesafe bilinen iki noktaya {} ({} / 2)",
  "Tap": "Dokunun",
- "Click": "Tıklayın",
+ "Click": "Tıkla",
  "Length between them, in": "Aralarındaki uzunluk, birim:",
  "Length between the points, in {}": "Noktalar arasındaki uzunluk, birim: {}",
  "Drag the plan into place": "Planı yerine sürükleyin",
@@ -1475,5 +1475,17 @@
  "Chocolate Enrober": "Çikolata Kaplama Makinesi",
  "Flow-Pack Wrapping Machine": "Flow-Pack Paketleme Makinesi",
  "Stainless Worktable": "Paslanmaz Çalışma Masası",
- "Chocolate Tank": "Çikolata Tankı"
+ "Chocolate Tank": "Çikolata Tankı",
+ "walk there": "oraya yürü",
+ "look around": "etrafa bak",
+ "walk": "yürü",
+ "Double-click": "Çift tık",
+ "mouse-look": "fareyle bak",
+ "exit": "çık",
+ "walk to the crosshair": "nişangaha yürü",
+ "Drag": "Sürükle",
+ "sprint": "koş",
+ "floor": "kat",
+ "time": "saat",
+ "release": "bırak"
 }

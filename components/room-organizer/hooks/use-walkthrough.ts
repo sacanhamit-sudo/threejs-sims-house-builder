@@ -11,7 +11,10 @@ import {
   type WalkCollider,
   type WalkerState,
 } from '../lib/walk-collision';
-import { interacts, isTypingTarget, releasesHeldKeys, startsWalking, walkFrameSeconds } from '../lib/walk-input';
+import {
+  CLICK_SLOP_PX, CLICK_STALL_FRAMES, CLICK_TURN_EASE, floorPointOnRay, interacts, isTypingTarget, releasesHeldKeys,
+  startsWalking, stepToward, turnToward, walkFrameSeconds, yawToward,
+} from '../lib/walk-input';
 import { findInteractable, seatPose } from '../lib/walk-interact';
 import { walkArrival, walkSpawn, type WalkPose } from '../lib/walk-spawn';
 import {
@@ -150,6 +153,15 @@ interface WalkSession {
   stickSprint: boolean;
   /** Walking by touch: no pointer lock, the stick and drags drive the walker. */
   touch: boolean;
+  /**
+   * Walking with a free mouse (factory fork): no pointer lock; a click walks
+   * to the clicked spot, a drag looks around, the keys still walk.
+   */
+  free: boolean;
+  /** Where a click sent the walker, or null. Any key or stick step cancels it. */
+  goal: { x: number; z: number } | null;
+  /** Frames the click walk has barely moved: past CLICK_STALL_FRAMES it is blocked and stops. */
+  goalStall: number;
   /** Where the walker stood before sitting, or null while standing. */
   seated: { x: number; z: number } | null;
   seatTargetId: string | null;
@@ -254,6 +266,9 @@ export function useWalkthrough(options: UseWalkthroughOptions): UseWalkthroughRe
     stickY: 0,
     stickSprint: false,
     touch: false,
+    free: true,
+    goal: null,
+    goalStall: 0,
     seated: null,
     seatTargetId: null,
     lampTargetId: null,
@@ -417,6 +432,9 @@ export function useWalkthrough(options: UseWalkthroughOptions): UseWalkthroughRe
     session.stickX = 0;
     session.stickY = 0;
     session.stickSprint = false;
+    session.free = true;
+    session.goal = null;
+    session.goalStall = 0;
     session.seatTargetId = null;
     session.lampTargetId = null;
     if (initial) placeAt(walkSpawn(initial, initial.floorIndex));
@@ -498,6 +516,8 @@ export function useWalkthrough(options: UseWalkthroughOptions): UseWalkthroughRe
       if (releasesHeldKeys(event)) pressed.clear();
       else if (startsWalking(event)) {
         pressed.add(event.code);
+        // A key takes over from a click walk at once, even a tap between frames.
+        if (event.code !== 'ShiftLeft' && event.code !== 'ShiftRight') session.goal = null;
         // Keys walk under the pointer lock, not in touch mode.
         if (!controls?.isLocked) session.touch = false;
       }
@@ -528,11 +548,43 @@ export function useWalkthrough(options: UseWalkthroughOptions): UseWalkthroughRe
     let lookPointer: number | null = null;
     let lookX = 0;
     let lookY = 0;
+    // Click to walk (factory fork): the mouse press being watched, and whether it has become a look drag.
+    let mousePress: { id: number; x: number; y: number; dragged: boolean } | null = null;
+    const raycaster = new THREE.Raycaster();
+    const pointerNdc = new THREE.Vector2();
+    /** Send the walker to the floor under a screen point, or under the crosshair when locked. */
+    const walkToScreenPoint = (clientX: number | null, clientY: number | null): void => {
+      if (clientX === null || clientY === null) {
+        pointerNdc.set(0, 0);
+      } else {
+        const rect = canvas.getBoundingClientRect();
+        if (rect.width === 0 || rect.height === 0) return;
+        pointerNdc.set(((clientX - rect.left) / rect.width) * 2 - 1, -((clientY - rect.top) / rect.height) * 2 + 1);
+      }
+      // The camera may have moved since the last render.
+      camera.updateMatrixWorld();
+      raycaster.setFromCamera(pointerNdc, camera);
+      const point = floorPointOnRay(raycaster.ray.origin, raycaster.ray.direction, session.walker.y);
+      if (!point) return;
+      session.goal = point;
+      session.goalStall = 0;
+      invalidateRef.current?.();
+    };
     const onPointerDown = (event: PointerEvent) => {
       lastPointerType = event.pointerType;
       if (event.pointerType === 'mouse') {
-        // A mouse is back: walking needs the pointer lock again.
+        // A mouse is back: it walks by clicks and the keys, or under the lock.
         session.touch = false;
+        session.free = true;
+        if (event.button !== 0) return;
+        // Locked, the cursor is the crosshair: a click walks to where it points.
+        if (controls?.isLocked) {
+          walkToScreenPoint(null, null);
+          return;
+        }
+        mousePress = { id: event.pointerId, x: event.clientX, y: event.clientY, dragged: false };
+        lookX = event.clientX;
+        lookY = event.clientY;
         return;
       }
       if (lookPointer !== null) return;
@@ -542,6 +594,19 @@ export function useWalkthrough(options: UseWalkthroughOptions): UseWalkthroughRe
       lookY = event.clientY;
     };
     const onPointerMove = (event: PointerEvent) => {
+      if (mousePress && event.pointerId === mousePress.id) {
+        if (!mousePress.dragged && Math.hypot(event.clientX - mousePress.x, event.clientY - mousePress.y) < CLICK_SLOP_PX) return;
+        // A drag with the button held looks around, as a finger does.
+        mousePress.dragged = true;
+        lookEuler.setFromQuaternion(camera.quaternion);
+        lookEuler.y -= (event.clientX - lookX) * TOUCH_LOOK;
+        lookEuler.x = Math.max(-MAX_PITCH, Math.min(MAX_PITCH, lookEuler.x - (event.clientY - lookY) * TOUCH_LOOK));
+        camera.quaternion.setFromEuler(lookEuler);
+        lookX = event.clientX;
+        lookY = event.clientY;
+        invalidateRef.current?.();
+        return;
+      }
       if (event.pointerId !== lookPointer) return;
       lookEuler.setFromQuaternion(camera.quaternion);
       lookEuler.y -= (event.clientX - lookX) * TOUCH_LOOK;
@@ -552,6 +617,12 @@ export function useWalkthrough(options: UseWalkthroughOptions): UseWalkthroughRe
       invalidateRef.current?.();
     };
     const onPointerEnd = (event: PointerEvent) => {
+      if (mousePress && event.pointerId === mousePress.id) {
+        const press = mousePress;
+        mousePress = null;
+        if (!press.dragged && event.type === 'pointerup') walkToScreenPoint(event.clientX, event.clientY);
+        return;
+      }
       if (event.pointerId === lookPointer) lookPointer = null;
     };
     canvas.addEventListener('pointerdown', onPointerDown);
@@ -593,8 +664,9 @@ export function useWalkthrough(options: UseWalkthroughOptions): UseWalkthroughRe
         setLocked(true);
       };
       const onUnlock = () => setLocked(false);
-      canvas.addEventListener('click', requestLock);
-      cleanup.push(() => canvas.removeEventListener('click', requestLock));
+      // A single click walks (factory fork); a double click locks the pointer for mouse-look.
+      canvas.addEventListener('dblclick', requestLock);
+      cleanup.push(() => canvas.removeEventListener('dblclick', requestLock));
       canvas.ownerDocument.addEventListener('pointerlockerror', markRefused);
       cleanup.push(() => canvas.ownerDocument.removeEventListener('pointerlockerror', markRefused));
       controls.addEventListener('lock', onLock);
@@ -634,7 +706,7 @@ export function useWalkthrough(options: UseWalkthroughOptions): UseWalkthroughRe
         lastTime = now;
 
         const isLocked = Boolean(controls?.isLocked);
-        if (!isLocked && !session.touch) return;
+        if (!isLocked && !session.touch && !session.free) return;
         // Mouse-look and touch-look invalidate from their own handlers; this
         // loop draws only for what it moves itself (#666).
         let dirty = false;
@@ -660,27 +732,19 @@ export function useWalkthrough(options: UseWalkthroughOptions): UseWalkthroughRe
         if (pressed.has('KeyD') || pressed.has('ArrowRight')) dx += 1;
         const len = Math.hypot(dx, dz);
 
-        if (len > 0 && session.seated && !transition.active) {
-          // Any step stands the walker up first.
-          standUp();
-        } else if (len > 0 && !session.seated && !transition.active) {
-          // The stick is analogue: a light push walks slowly.
-          const scale = len > 1 ? 1 / len : 1;
-          const sprint = pressed.has('ShiftLeft') || pressed.has('ShiftRight') || session.stickSprint;
-          const distance = walkSpeedRef.current * (sprint ? 2 : 1) * delta;
-          camera.getWorldDirection(forward);
-          forward.y = 0;
-          forward.normalize();
-          right.crossVectors(forward, camera.up).normalize();
-          const moveX = (forward.x * -dz + right.x * dx) * scale * distance;
-          const moveZ = (forward.z * -dz + right.z * dx) * scale * distance;
+        // A key or the stick takes over from a click walk.
+        if (len > 0) session.goal = null;
+        const sprinting = pressed.has('ShiftLeft') || pressed.has('ShiftRight') || session.stickSprint;
+        /** Move the walker by (moveX, moveZ) through the colliders; returns how far it got. */
+        const applyMove = (moveX: number, moveZ: number): number => {
           const world = worldRef.current;
           // The walkers' bodies block too (#585).
           const solid = withNpcBodies(collidersRef.current[walker.floorIndex] ?? NO_COLLIDERS, npcsRef.current?.bodies ?? NO_BODIES, bodiesCache);
           const fromX = walker.x;
           const fromZ = walker.z;
           if (world) advanceWalker(world, solid, walker, moveX, moveZ, WALKER_RADIUS);
-          session.walked += Math.hypot(walker.x - fromX, walker.z - fromZ);
+          const moved = Math.hypot(walker.x - fromX, walker.z - fromZ);
+          session.walked += moved;
           publishPlayer();
           dirty = true;
           updateView(session.nearStairs);
@@ -689,6 +753,39 @@ export function useWalkthrough(options: UseWalkthroughOptions): UseWalkthroughRe
             session.reportedFloor = walker.floorIndex;
             session.pendingFloors.push(walker.floorIndex);
             onFloorChangeRef.current?.(walker.floorIndex);
+          }
+          return moved;
+        };
+
+        if ((len > 0 || session.goal) && session.seated && !transition.active) {
+          // Any step stands the walker up first.
+          standUp();
+        } else if (len > 0 && !session.seated && !transition.active) {
+          // The stick is analogue: a light push walks slowly.
+          const scale = len > 1 ? 1 / len : 1;
+          const distance = walkSpeedRef.current * (sprinting ? 2 : 1) * delta;
+          camera.getWorldDirection(forward);
+          forward.y = 0;
+          forward.normalize();
+          right.crossVectors(forward, camera.up).normalize();
+          const moveX = (forward.x * -dz + right.x * dx) * scale * distance;
+          const moveZ = (forward.z * -dz + right.z * dx) * scale * distance;
+          applyMove(moveX, moveZ);
+        } else if (session.goal && !session.seated && !transition.active) {
+          const distance = walkSpeedRef.current * (sprinting ? 2 : 1) * delta;
+          const step = stepToward(walker, session.goal, distance);
+          if (step.arrived) {
+            session.goal = null;
+          } else {
+            // The view turns the way the walker heads, keeping its pitch.
+            lookEuler.setFromQuaternion(camera.quaternion);
+            lookEuler.y = turnToward(lookEuler.y, yawToward(step.moveX, step.moveZ), delta * CLICK_TURN_EASE);
+            camera.quaternion.setFromEuler(lookEuler);
+            const moved = applyMove(step.moveX, step.moveZ);
+            const intended = Math.hypot(step.moveX, step.moveZ);
+            session.goalStall = moved < intended * 0.25 ? session.goalStall + 1 : 0;
+            // Blocked by a wall or a machine: stop where it got to.
+            if (session.goalStall > CLICK_STALL_FRAMES) session.goal = null;
           }
         }
 

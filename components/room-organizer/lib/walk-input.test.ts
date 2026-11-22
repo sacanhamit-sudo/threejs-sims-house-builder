@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { WALK_MAX_FRAME_SECONDS, interacts, isTypingTarget, readStick, releasesHeldKeys, startsWalking, walkFrameSeconds } from './walk-input';
+import { WALK_MAX_FRAME_SECONDS, floorPointOnRay, interacts, isTypingTarget, readStick, releasesHeldKeys, startsWalking, stepToward, turnToward, walkFrameSeconds, yawToward } from './walk-input';
 
 const key = (code: string, mods: Partial<{ ctrlKey: boolean; metaKey: boolean; altKey: boolean }> = {}) => ({
   code,
@@ -129,5 +129,35 @@ describe('readStick (#688)', () => {
     expect(readStick(88, 0, reach, true).sprint).toBe(true);
     expect(readStick(87, 0, reach, true).sprint).toBe(false);
     expect(readStick(90, 0, reach, false).sprint).toBe(false);
+  });
+});
+
+describe('click to walk', () => {
+  it('finds the clicked floor point', () => {
+    const point = floorPointOnRay({ x: 0, y: 1.6, z: 0 }, { x: 0, y: -0.8, z: -0.6 }, 0);
+    expect(point?.x).toBeCloseTo(0);
+    expect(point?.z).toBeCloseTo(-1.2);
+  });
+
+  it('ignores a click at or above the horizon, or too far away', () => {
+    expect(floorPointOnRay({ x: 0, y: 1.6, z: 0 }, { x: 0, y: 0, z: -1 }, 0)).toBeNull();
+    expect(floorPointOnRay({ x: 0, y: 1.6, z: 0 }, { x: 0, y: 0.2, z: -1 }, 0)).toBeNull();
+    expect(floorPointOnRay({ x: 0, y: 1.6, z: 0 }, { x: 0, y: -0.001, z: -1 }, 0)).toBeNull();
+  });
+
+  it('steps toward the goal without overshooting, then arrives', () => {
+    const far = stepToward({ x: 0, z: 0 }, { x: 3, z: 4 }, 1);
+    expect(far.arrived).toBe(false);
+    expect(Math.hypot(far.moveX, far.moveZ)).toBeCloseTo(1);
+    const near = stepToward({ x: 0, z: 0 }, { x: 0.5, z: 0 }, 1);
+    expect(near.moveX).toBeCloseTo(0.5);
+    expect(stepToward({ x: 0, z: 0 }, { x: 0.1, z: 0 }, 1).arrived).toBe(true);
+  });
+
+  it('faces the heading and turns the short way round', () => {
+    expect(yawToward(0, -1)).toBeCloseTo(0);
+    expect(yawToward(-1, 0)).toBeCloseTo(Math.PI / 2);
+    expect(turnToward(3, -3, 1)).toBeCloseTo(-3 + Math.PI * 2);
+    expect(turnToward(0, 1, 0.5)).toBeCloseTo(0.5);
   });
 });

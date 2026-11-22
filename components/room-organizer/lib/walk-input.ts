@@ -106,3 +106,68 @@ export function readStick(dx: number, dy: number, reach: number, sprinting = fal
   const sprint = push >= (sprinting ? STICK_SPRINT_OFF : STICK_SPRINT_ON);
   return { x: (knobX / reach) * speed, y: (-knobY / reach) * speed, knobX, knobY, sprint };
 }
+
+// ---------------------------------------------------------------------------
+// Click to walk (factory fork): a mouse click on the floor walks the walker
+// there; a drag looks around instead.
+
+/** A press that moves the pointer less than this (px) is a click, not a look drag. */
+export const CLICK_SLOP_PX = 5;
+/** The farthest a click sends the walker (m): past it, a click near the horizon is noise. */
+export const CLICK_WALK_MAX_M = 40;
+/** The walker has arrived within this distance of the clicked spot (m). */
+export const CLICK_ARRIVE_M = 0.15;
+/** Frames of making under a quarter of the intended progress before the walk gives up (blocked). */
+export const CLICK_STALL_FRAMES = 12;
+/** How fast the view turns toward where a click walk is heading (1/s). */
+export const CLICK_TURN_EASE = 6;
+
+/**
+ * Where a ray from `origin` along `dir` meets the floor at height `floorY`,
+ * or null when it points level or up, or lands farther than `maxDistance`
+ * across the floor.
+ */
+export function floorPointOnRay(
+  origin: Readonly<{ x: number; y: number; z: number }>,
+  dir: Readonly<{ x: number; y: number; z: number }>,
+  floorY: number,
+  maxDistance = CLICK_WALK_MAX_M
+): { x: number; z: number } | null {
+  if (dir.y >= -1e-6) return null;
+  const t = (floorY - origin.y) / dir.y;
+  if (!(t > 0)) return null;
+  const x = origin.x + dir.x * t;
+  const z = origin.z + dir.z * t;
+  if (Math.hypot(x - origin.x, z - origin.z) > maxDistance) return null;
+  return { x, z };
+}
+
+/**
+ * This frame's step toward `goal`: at most `distance` metres, never past it.
+ * `arrived` once within `CLICK_ARRIVE_M`.
+ */
+export function stepToward(
+  from: Readonly<{ x: number; z: number }>,
+  goal: Readonly<{ x: number; z: number }>,
+  distance: number
+): { moveX: number; moveZ: number; arrived: boolean } {
+  const dx = goal.x - from.x;
+  const dz = goal.z - from.z;
+  const left = Math.hypot(dx, dz);
+  if (left <= CLICK_ARRIVE_M) return { moveX: 0, moveZ: 0, arrived: true };
+  const step = Math.min(distance, left);
+  return { moveX: (dx / left) * step, moveZ: (dz / left) * step, arrived: false };
+}
+
+/** The yaw (radians, three.js convention: 0 looks down −z) that faces along (dx, dz). */
+export function yawToward(dx: number, dz: number): number {
+  return Math.atan2(-dx, -dz);
+}
+
+/** `from` turned toward `to` by `share` of the shorter way round. */
+export function turnToward(from: number, to: number, share: number): number {
+  let gap = (to - from) % (Math.PI * 2);
+  if (gap > Math.PI) gap -= Math.PI * 2;
+  if (gap < -Math.PI) gap += Math.PI * 2;
+  return from + gap * Math.min(1, Math.max(0, share));
+}

@@ -186,16 +186,16 @@ describe('useWalkthrough — spawn and HUD state (#463a, #454)', () => {
 });
 
 describe('useWalkthrough — walking (#446)', () => {
-  it("doesn't walk before the pointer is locked, then walks with W", async () => {
+  it('walks with W before the pointer is locked, and under the lock (factory fork: the mouse walks free)', async () => {
     const { camera, lock } = await setup(building([FRONT_DOOR]));
     key('keydown', 'KeyW', 'w');
     frames(20);
-    expect(camera.position.z).toBeCloseTo(-3.1, 6);
+    // 20 frames of 16 ms at 3 m/s, with no lock.
+    expect(camera.position.z).toBeCloseTo(-3.1 + 0.96, 1);
     lock();
     frames(30);
     key('keyup', 'KeyW', 'w');
-    // 30 frames of 16 ms at 3 m/s.
-    expect(camera.position.z).toBeCloseTo(-3.1 + 1.44, 1);
+    expect(camera.position.z).toBeCloseTo(-3.1 + 0.96 + 1.44, 1);
   });
 
   it('walks out of the front door onto the lot', async () => {
@@ -392,5 +392,51 @@ describe('useWalkthrough — render on demand (#666)', () => {
     invalidate.mockClear();
     frames(30);
     expect(invalidate).not.toHaveBeenCalled();
+  });
+});
+
+describe('useWalkthrough — click to walk (factory fork)', () => {
+  const rect = (canvas: HTMLCanvasElement) =>
+    vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue({ left: 0, top: 0, width: 1600, height: 900, right: 1600, bottom: 900, x: 0, y: 0, toJSON: () => ({}) });
+
+  it('walks to the floor point a mouse click lands on, and stops there', async () => {
+    const { camera, canvas } = await setup(building([FRONT_DOOR]));
+    rect(canvas);
+    // Spawned at z −3.1 looking toward +z: a click below the centre is on the floor ahead.
+    pointer(canvas, 'pointerdown', { pointerType: 'mouse', pointerId: 1, clientX: 800, clientY: 700 });
+    pointer(window, 'pointerup', { pointerType: 'mouse', pointerId: 1, clientX: 800, clientY: 700 });
+    const start = camera.position.z;
+    frames(120);
+    const walked = camera.position.z - start;
+    expect(walked).toBeGreaterThan(0.5);
+    // Arrived: more frames don't move it on.
+    const settled = camera.position.z;
+    frames(30);
+    expect(camera.position.z).toBeCloseTo(settled, 6);
+  });
+
+  it('looks around on a drag instead of walking', async () => {
+    const { camera, canvas, facing } = await setup(building([FRONT_DOOR]));
+    rect(canvas);
+    const before = facing().x;
+    pointer(canvas, 'pointerdown', { pointerType: 'mouse', pointerId: 1, clientX: 800, clientY: 450 });
+    pointer(window, 'pointermove', { pointerType: 'mouse', pointerId: 1, clientX: 900, clientY: 450 });
+    pointer(window, 'pointerup', { pointerType: 'mouse', pointerId: 1, clientX: 900, clientY: 450 });
+    frames(30);
+    expect(facing().x).not.toBeCloseTo(before, 3);
+    expect(camera.position.z).toBeCloseTo(-3.1, 6);
+  });
+
+  it('a key cancels a click walk', async () => {
+    const { camera, canvas } = await setup(building([FRONT_DOOR]));
+    rect(canvas);
+    pointer(canvas, 'pointerdown', { pointerType: 'mouse', pointerId: 1, clientX: 800, clientY: 700 });
+    pointer(window, 'pointerup', { pointerType: 'mouse', pointerId: 1, clientX: 800, clientY: 700 });
+    frames(5);
+    key('keydown', 'KeyS', 's');
+    key('keyup', 'KeyS', 's');
+    const after = camera.position.z;
+    frames(30);
+    expect(camera.position.z).toBeCloseTo(after, 6);
   });
 });

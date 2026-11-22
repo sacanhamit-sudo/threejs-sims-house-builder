@@ -16,6 +16,9 @@
 >   spiral hamur yoğurma makinesi, rotary bisküvi kalıplama makinesi, tünel
 >   fırın, soğutma tüneli, çikolata konş, temperleme ve kaplama makineleri,
 >   çikolata tankı, flow-pack paketleme makinesi, paslanmaz çalışma masası.
+> - **Tıkla-yürü gezinti**: KEŞFET modunda zemine tıklayın, oraya yürür;
+>   sürükleyerek etrafa bakın; WASD da çalışır. Çift tık fareyi kilitler
+>   (klasik oyun bakışı), kilitliyken tıklamak nişangahın gösterdiği yere yürütür.
 > - **Bisküvi ve Çikolata Fabrikası şablonu** (36 × 24 m, üç kat):
 >   zemin katta depolama ve sevkiyat (palet rafları, 3 yükleme kapısı,
 >   forkliftler), 1. katta 4 bölümlü üretim (hamur hazırlama, bisküvi hattı,
