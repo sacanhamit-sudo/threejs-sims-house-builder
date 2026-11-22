@@ -13,7 +13,7 @@ const DESCRIPTION =
 // the app/icon.svg, favicon.ico, apple-icon.png and opengraph-image.png files
 // (regenerate the rasters with scripts/build-icons.mjs).
 export const metadata: Metadata = {
-  metadataBase: new URL('https://ch-bas.github.io'),
+  metadataBase: new URL('https://sacanhamit-sudo.github.io'),
   title: SITE_NAME,
   description: DESCRIPTION,
   applicationName: SITE_NAME,

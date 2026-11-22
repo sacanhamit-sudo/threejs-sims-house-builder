@@ -18,7 +18,7 @@
 > - **Üç Katlı Fabrika şablonu**: zeminde üretim holü (4,5 m kat yüksekliği),
 >   1. katta montaj ve depo, 2. katta ofisler; katlar merdivenle bağlı.
 
-[![Live Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://ch-bas.github.io/threejs-sims-house-builder/)
+[![Live Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://sacanhamit-sudo.github.io/threejs-sims-house-builder/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)](tsconfig.json)
 [![Next.js](https://img.shields.io/badge/Next.js-15-black)](https://nextjs.org)
